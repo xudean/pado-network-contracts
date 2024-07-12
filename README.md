@@ -5,7 +5,26 @@
 
 1. [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 2. [Foundry](https://getfoundry.sh/)
-3. [hardhat](https://hardhat.org/tutorial)
+
+### Install
 ```shell
-npm install --save-dev hardhat
+npm install
+```
+
+### Building and Running Tests
+```shell
+foundryup
+
+forge build
+forge test
+```
+
+### Deploying
+```shell
+npx hardhat run --network [network] scripts/deployXXX.js
+```
+
+### Upgrading
+```shell
+npx hardhat run --network [network] scripts/upgradeXXX.js
 ```
