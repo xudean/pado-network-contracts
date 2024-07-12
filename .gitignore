@@ -1,5 +1,6 @@
 # Compiler files
 cache/
+.idea
 out/
 
 # Ignores development broadcast logs
