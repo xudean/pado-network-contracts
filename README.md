@@ -16,7 +16,7 @@ npm install
 foundryup
 
 forge build
-forge test
+npx hardhat test
 ```
 
 ### Deploying
