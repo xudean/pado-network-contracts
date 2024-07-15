@@ -28,6 +28,7 @@ contract ServiceManager is ServiceManagerBase{
 
     function initialize(address initialOwner) public virtual initializer {
         _transferOwnership(initialOwner);
+        _setRewardsInitiator(initialOwner);
     }
 
     function updateAVSMetadataURI(string memory _metadataURI)  public override onlyOwner {

@@ -18,3 +18,4 @@ docs/
 .env
 .openzeppelin
 cache_hardhat
+script/deploy/holesky/output/
