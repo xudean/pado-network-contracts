@@ -14,7 +14,7 @@ const contractAddress = '0x62169cb4D43df7F9c52b49ee07D70Ce007c6c291';
 // Create a contract instance
 const contract = new ethers.Contract(contractAddress, serviceManagerAbi, wallet);
 
-async function update() {
+async function call() {
     try {
         const caller = await wallet.getAddress()
         console.log(`caller is:${caller}`)
@@ -25,10 +25,5 @@ async function update() {
     }
 }
 
-// Function to create a new task with a random name every 15 seconds
-async function startCreatingTasks() {
-    await update()
-}
-
-// Start the process
-startCreatingTasks();
+// call
+call();

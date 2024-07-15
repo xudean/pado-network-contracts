@@ -2,7 +2,7 @@ const { ethers, upgrades } = require("hardhat");
 const {counterAbi} = require("./abi/counterAbi");
 
 // Connect to the Ethereum network
-const provider = new ethers.JsonRpcProvider(`https://rpc-holesky.rockx.com`);
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 
 // Replace with your own private key (ensure this is kept secret in real applications)
 const privateKey = process.env.PRIVATE_KEY;
@@ -14,7 +14,7 @@ const contractAddress = '0x32839Da39Cb94B312e8e5fF9Ae1eCdDd7AE8Db23';
 // Create a contract instance
 const contract = new ethers.Contract(contractAddress, counterAbi, wallet);
 
-async function update() {
+async function call() {
     try {
         const caller = await wallet.getAddress()
         console.log(`caller is:${caller}`)
@@ -31,10 +31,5 @@ async function update() {
     }
 }
 
-// Function to create a new task with a random name every 15 seconds
-async function startCreatingTasks() {
-    await update()
-}
-
-// Start the process
-startCreatingTasks();
+// call
+call();
