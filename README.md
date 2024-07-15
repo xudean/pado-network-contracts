@@ -12,19 +12,24 @@ npm install
 ```
 
 ### Building and Running Tests
-```shell
-foundryup
 
+```shell
+#check out
+git submodule update --init --recursive
+#update foundry to latest
+foundryup
+#build
 forge build
+#run test
 npx hardhat test
 ```
 
 ### Deploying
 ```shell
-npx hardhat run --network [network] scripts/deployXXX.js
+npx hardhat run --network [network] script/deployXXX.js
 ```
 
 ### Upgrading
 ```shell
-npx hardhat run --network [network] scripts/upgradeXXX.js
+npx hardhat run --network [network] script/upgradeXXX.js
 ```

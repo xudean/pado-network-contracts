@@ -8,7 +8,7 @@ async function main() {
   );
   console.log("Upgrade Counter...");
   const counterContract = await ethers.getContractFactory("Counter");
-  const proxyContractAddress = '0xbcce0701BF07A4d0462Ab82552Dd1A8608ca368d';
+  const proxyContractAddress = '0x32839Da39Cb94B312e8e5fF9Ae1eCdDd7AE8Db23';
   const proxy = await upgrades.upgradeProxy(proxyContractAddress,counterContract);
 
 
