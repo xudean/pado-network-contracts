@@ -6,6 +6,8 @@ import "forge-std/StdJson.sol";
 
 import {Utils} from "../utils/Utils.s.sol";
 import {ExistingDeploymentParser} from "../utils/ExistingDeploymentParser.sol";
+import "forge-std/console.sol";
+
 
 // OpenZeppelin
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -51,7 +53,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     );
     string public outputPath =
     string.concat(
-        "script/deploy/holesky/output/padonetwork_middleware_deployment_data_holesky.json"
+        "script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
     );
 
     ProxyAdmin public proxyAdmin;
@@ -87,6 +89,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         ProxyAdmin
     )
     {
+        console.log("deployer is:%s",msg.sender);
         // get info on all the already-deployed contracts
         _parseDeployedContracts(existingDeploymentInfoPath);
 

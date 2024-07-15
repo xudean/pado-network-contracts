@@ -26,11 +26,7 @@ contract ServiceManager is ServiceManagerBase{
         
     }
 
-    function initialize() external initializer() {
-        __ServiceManagerBase_init(msg.sender);
-    }
-
-    function __ServiceManagerBase_init(address initialOwner) internal onlyInitializing {
+    function initialize(address initialOwner) public virtual initializer {
         _transferOwnership(initialOwner);
     }
 
