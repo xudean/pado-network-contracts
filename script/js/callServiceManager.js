@@ -62,5 +62,6 @@ async  function call(){
     // await callUpdateMetaUri();
 }
 
-// call
+// call command
+// npx hardhat run --network holesky script/js/callServiceManager.js
 call();

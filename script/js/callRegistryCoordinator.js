@@ -28,5 +28,6 @@ async function call() {
     }
 }
 
-// call
+// call command
+// npx hardhat run --network holesky script/js/callRegistryCoordinator.js
 call();

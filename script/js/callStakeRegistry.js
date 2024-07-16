@@ -67,5 +67,6 @@ async function addStrategies() {
     await tx.wait();
 }
 
-// call
+// call command
+// npx hardhat run --network holesky script/js/callStakeRegistry.js
 call();
