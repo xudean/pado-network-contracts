@@ -17,15 +17,49 @@ if(!contractAddress){
 // Create a contract instance
 const contract = new ethers.Contract(contractAddress, serviceManagerAbi, wallet);
 
-async function call() {
+async function owner() {
     try {
-        const caller = await wallet.getAddress()
-        console.log(`caller is:${caller}`)
         const owner = await contract.owner()
         console.log(`owner is: ${owner}`);
     } catch (error) {
         console.error('Error sending transaction:', error);
     }
+}
+
+
+async function callGetRestakeableStrategies() {
+    try {
+        const strategy = await contract.getRestakeableStrategies()
+        console.log(`strategies size is: ${strategy.length}`);
+        console.log(`strategies is: ${strategy}`);
+        return strategy;
+    } catch (error) {
+        console.error('Error sending transaction:', error);
+    }
+}
+
+async function callUpdateMetaUri() {
+    const metaUri = process.env.AVS_META_URI;
+    if(!metaUri){
+        throw new Error('AVS_META_URI is empty!')
+    }
+    // Send a transaction to the createNewTask function
+    const tx = await contract.updateAVSMetadataURI(metaUri);
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    console.log(`updateMetaUri successfully ,tx hash: ${receipt.transactionHash}`);
+}
+
+
+
+async  function call(){
+    const caller = await wallet.getAddress()
+    console.log(`caller is:${caller}`);
+    await owner();
+    await callGetRestakeableStrategies();
+    // await callUpdateMetaUri();
 }
 
 // call
