@@ -29,13 +29,3 @@ npx hardhat test
 ```shell
 forge script script/deploy/holesky/Holesky_DeployPADONetworkContracts.s.sol:Holesky_DeployPADONetworkContracts --rpc-url [rpc-url] --private-key [private-key] --broadcast
 ```
-
-#### Using hardhat
-```shell
-npx hardhat run --network [network] script/js/deployXXX.js
-```
-
-### Upgrading
-```shell
-npx hardhat run --network [network] script/js/upgradeXXX.js
-```

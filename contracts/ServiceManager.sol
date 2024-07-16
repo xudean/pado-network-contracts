@@ -30,19 +30,4 @@ contract ServiceManager is ServiceManagerBase{
         _transferOwnership(initialOwner);
         _setRewardsInitiator(initialOwner);
     }
-
-    function updateAVSMetadataURI(string memory _metadataURI)  public override onlyOwner {
-        _avsDirectory.updateAVSMetadataURI(_metadataURI);
-    }
-    
-    function registerOperatorToAVS(
-        address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    )  public override onlyRegistryCoordinator {
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
-    }
-
-    function deregisterOperatorFromAVS(address operator)  public override  onlyRegistryCoordinator {
-        _avsDirectory.deregisterOperatorFromAVS(operator);
-    }
 }
