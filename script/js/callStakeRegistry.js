@@ -26,18 +26,18 @@ async function call() {
         // console.log(strategy)
         await addStrategies()
         console.log("addStrategies success!")
-        // await removeStrategies(0, [0]);
+        // await removeStrategies(0, [1]);
         // console.log("removeStrategies success!")
 
 
-        // for(let i = 0; i < 9; i++){
-        // // the removal of lower index entries will cause a shift in the indices of the other strategies to remove
-        //     const indexes = [3]
-        //     const strategy = await getStrategy(0,3)
-        //     console.log(`strategy is${strategy},will remove`)
-        //     await removeStrategies(0, indexes)
-        //     console.log("removeStrategies success!")
-        // }
+/*        for(let i = 0; i < 13; i++){
+        // the removal of lower index entries will cause a shift in the indices of the other strategies to remove
+            const indexes = [0]
+            const strategy = await getStrategy(0,0)
+            console.log(`strategy is${strategy},will remove`)
+            await removeStrategies(0, indexes)
+            console.log("removeStrategies success!")
+        }*/
     } catch (error) {
         console.error('Error sending transaction:', error);
     }
@@ -60,8 +60,8 @@ async function removeStrategies(quorumNumber, indexes) {
 //add strategies
 async function addStrategies() {
     // const tx = await contract.addStrategies(0, [{
-    //     strategy:"0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0",
-    //     multiplier: 1000
+    //     strategy:"0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3",
+    //     multiplier: "1000000000000000000"
     // }])
     const tx = await contract.addStrategies(0, holeskyFullStrategies)
     await tx.wait();
