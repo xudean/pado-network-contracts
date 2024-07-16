@@ -27,7 +27,7 @@ async function owner() {
 }
 
 
-async function callGetRestakeableStrategies() {
+async function getRestakeableStrategies() {
     try {
         const strategy = await contract.getRestakeableStrategies()
         console.log(`strategies size is: ${strategy.length}`);
@@ -38,7 +38,7 @@ async function callGetRestakeableStrategies() {
     }
 }
 
-async function callUpdateMetaUri() {
+async function updateMetaUri() {
     const metaUri = process.env.AVS_META_URI;
     if(!metaUri){
         throw new Error('AVS_META_URI is empty!')
@@ -58,8 +58,8 @@ async  function call(){
     const caller = await wallet.getAddress()
     console.log(`caller is:${caller}`);
     await owner();
-    await callGetRestakeableStrategies();
-    // await callUpdateMetaUri();
+    await getRestakeableStrategies();
+    // await updateMetaUri();
 }
 
 // call command
