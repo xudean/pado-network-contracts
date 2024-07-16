@@ -63,5 +63,5 @@ async  function call(){
 }
 
 // call command
-// npx hardhat run --network holesky script/js/callServiceManager.js
+// npx hardhat run --network holesky script/js/serviceManager.js
 call();
