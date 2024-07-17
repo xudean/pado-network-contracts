@@ -29,3 +29,10 @@ npx hardhat test
 ```shell
 forge script script/deploy/holesky/Holesky_DeployPADONetworkContracts.s.sol:Holesky_DeployPADONetworkContracts --rpc-url [rpc-url] --private-key [private-key] --broadcast
 ```
+
+### Upgrading
+#### Using forge
+Filling right addresses in [eigenlayer_upgrade_holesky.json](./script/deploy/holesky/config/eigenlayer_upgrade_holesky.json)
+```shell
+forge script script/deploy/holesky/Holesky_UpgradePADONetworkContracts.s.sol:Holesky_UpgradePADONetworkContracts --rpc-url [rpc-url]  --private-key [private-key] --broadcast
+```

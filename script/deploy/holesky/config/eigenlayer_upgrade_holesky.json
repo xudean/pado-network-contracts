@@ -1,0 +1,14 @@
+{
+  "addresses": {
+    "serviceManagerAddress": "0xb6988aebe11e88cb2D93d9E557795A2fDE68A8B5",
+    "registryCoordinatorAddress": "0x9A8Cd787251189ED13B188Dae92a79c3b4B23fDF",
+    "stakeRegistryAddress": "0x43FB8400FA8390a02DDD8cca8AC0FB4A9124eC71",
+    "indexRegistryAddress": "0x193FB02E7163b50E555b6A6c7F93b29Bee80E5Cc",
+    "blsApkRegistryAddress": "0xAd0f1E7A77fD2B85e005044dAb997e6DC493A7ff",
+    "proxyAdminAddress": "0x6Ec1E8480bA9BEb19af7C29F413f985378fa8E49",
+    "avsDirectoryAddress": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
+    "rewardsCoordinatorAddress": "0xAcc1fb458a1317E886dB376Fc8141540537E68fE",
+    "delegationManagerAddress": "0xA44151489861Fe9e3055d95adC98FbD462B948e7",
+    "eigenLayerPauserReg": "0x85Ef7299F8311B25642679edBF02B62FA2212F06"
+  }
+}
