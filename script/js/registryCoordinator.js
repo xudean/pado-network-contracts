@@ -23,10 +23,21 @@ async function call() {
         console.log(`caller is:${caller}`)
         const owner = await contract.owner()
         console.log(`owner is: ${owner}`);
+        await updateOperators();
     } catch (error) {
         console.error('Error sending transaction:', error);
     }
 }
+
+
+async function updateOperators(){
+    // Send a transaction to the createNewTask function
+    const operators = ['0x48f760bd0678daaf51a9417ca68edb210eb50104']
+    const tx = await contract.updateOperators(operators);
+    await tx.wait();
+    console.log(`tx: ${tx}`);
+}
+
 
 // call command
 // npx hardhat run --network holesky script/js/registryCoordinator.js

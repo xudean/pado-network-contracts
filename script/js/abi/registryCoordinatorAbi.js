@@ -1,5 +1,57 @@
 const registryCoordinatorAbi = [
     {
+        "type": "constructor",
+        "inputs": [
+            {
+                "name": "_serviceManager",
+                "type": "address",
+                "internalType": "contract IServiceManager"
+            },
+            {
+                "name": "_stakeRegistry",
+                "type": "address",
+                "internalType": "contract IStakeRegistry"
+            },
+            {
+                "name": "_blsApkRegistry",
+                "type": "address",
+                "internalType": "contract IBLSApkRegistry"
+            },
+            {
+                "name": "_indexRegistry",
+                "type": "address",
+                "internalType": "contract IIndexRegistry"
+            }
+        ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "OPERATOR_CHURN_APPROVAL_TYPEHASH",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "PUBKEY_REGISTRATION_TYPEHASH",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
         "type": "function",
         "name": "blsApkRegistry",
         "inputs": [],
@@ -11,6 +63,135 @@ const registryCoordinatorAbi = [
             }
         ],
         "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "calculateOperatorChurnApprovalDigestHash",
+        "inputs": [
+            {
+                "name": "registeringOperator",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "registeringOperatorId",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            },
+            {
+                "name": "operatorKickParams",
+                "type": "tuple[]",
+                "internalType": "struct IRegistryCoordinator.OperatorKickParam[]",
+                "components": [
+                    {
+                        "name": "quorumNumber",
+                        "type": "uint8",
+                        "internalType": "uint8"
+                    },
+                    {
+                        "name": "operator",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ]
+            },
+            {
+                "name": "salt",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            },
+            {
+                "name": "expiry",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "churnApprover",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "createQuorum",
+        "inputs": [
+            {
+                "name": "operatorSetParams",
+                "type": "tuple",
+                "internalType": "struct IRegistryCoordinator.OperatorSetParam",
+                "components": [
+                    {
+                        "name": "maxOperatorCount",
+                        "type": "uint32",
+                        "internalType": "uint32"
+                    },
+                    {
+                        "name": "kickBIPsOfOperatorStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    },
+                    {
+                        "name": "kickBIPsOfTotalStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ]
+            },
+            {
+                "name": "minimumStake",
+                "type": "uint96",
+                "internalType": "uint96"
+            },
+            {
+                "name": "strategyParams",
+                "type": "tuple[]",
+                "internalType": "struct IStakeRegistry.StrategyParams[]",
+                "components": [
+                    {
+                        "name": "strategy",
+                        "type": "address",
+                        "internalType": "contract IStrategy"
+                    },
+                    {
+                        "name": "multiplier",
+                        "type": "uint96",
+                        "internalType": "uint96"
+                    }
+                ]
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "deregisterOperator",
+        "inputs": [
+            {
+                "name": "quorumNumbers",
+                "type": "bytes",
+                "internalType": "bytes"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
     },
     {
         "type": "function",
@@ -29,6 +210,32 @@ const registryCoordinatorAbi = [
         ],
         "outputs": [],
         "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "ejectionCooldown",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "ejector",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
     },
     {
         "type": "function",
@@ -92,7 +299,7 @@ const registryCoordinatorAbi = [
         ],
         "outputs": [
             {
-                "name": "operator",
+                "name": "",
                 "type": "address",
                 "internalType": "address"
             }
@@ -301,6 +508,121 @@ const registryCoordinatorAbi = [
     },
     {
         "type": "function",
+        "name": "initialize",
+        "inputs": [
+            {
+                "name": "_initialOwner",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "_churnApprover",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "_ejector",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "_pauserRegistry",
+                "type": "address",
+                "internalType": "contract IPauserRegistry"
+            },
+            {
+                "name": "_initialPausedStatus",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "_operatorSetParams",
+                "type": "tuple[]",
+                "internalType": "struct IRegistryCoordinator.OperatorSetParam[]",
+                "components": [
+                    {
+                        "name": "maxOperatorCount",
+                        "type": "uint32",
+                        "internalType": "uint32"
+                    },
+                    {
+                        "name": "kickBIPsOfOperatorStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    },
+                    {
+                        "name": "kickBIPsOfTotalStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ]
+            },
+            {
+                "name": "_minimumStakes",
+                "type": "uint96[]",
+                "internalType": "uint96[]"
+            },
+            {
+                "name": "_strategyParams",
+                "type": "tuple[][]",
+                "internalType": "struct IStakeRegistry.StrategyParams[][]",
+                "components": [
+                    {
+                        "name": "strategy",
+                        "type": "address",
+                        "internalType": "contract IStrategy"
+                    },
+                    {
+                        "name": "multiplier",
+                        "type": "uint96",
+                        "internalType": "uint96"
+                    }
+                ]
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "isChurnApproverSaltUsed",
+        "inputs": [
+            {
+                "name": "",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool",
+                "internalType": "bool"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "lastEjectionTimestamp",
+        "inputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
         "name": "numRegistries",
         "inputs": [],
         "outputs": [
@@ -321,6 +643,71 @@ const registryCoordinatorAbi = [
                 "name": "",
                 "type": "address",
                 "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "pause",
+        "inputs": [
+            {
+                "name": "newPausedStatus",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "pauseAll",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "paused",
+        "inputs": [
+            {
+                "name": "index",
+                "type": "uint8",
+                "internalType": "uint8"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool",
+                "internalType": "bool"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "paused",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "pauserRegistry",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "contract IPauserRegistry"
             }
         ],
         "stateMutability": "view"
@@ -374,7 +761,7 @@ const registryCoordinatorAbi = [
         "name": "quorumUpdateBlockNumber",
         "inputs": [
             {
-                "name": "quorumNumber",
+                "name": "",
                 "type": "uint8",
                 "internalType": "uint8"
             }
@@ -387,6 +774,241 @@ const registryCoordinatorAbi = [
             }
         ],
         "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "registerOperator",
+        "inputs": [
+            {
+                "name": "quorumNumbers",
+                "type": "bytes",
+                "internalType": "bytes"
+            },
+            {
+                "name": "socket",
+                "type": "string",
+                "internalType": "string"
+            },
+            {
+                "name": "params",
+                "type": "tuple",
+                "internalType": "struct IBLSApkRegistry.PubkeyRegistrationParams",
+                "components": [
+                    {
+                        "name": "pubkeyRegistrationSignature",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G1Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pubkeyG1",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G1Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pubkeyG2",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G2Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256[2]",
+                                "internalType": "uint256[2]"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256[2]",
+                                "internalType": "uint256[2]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "operatorSignature",
+                "type": "tuple",
+                "internalType": "struct ISignatureUtils.SignatureWithSaltAndExpiry",
+                "components": [
+                    {
+                        "name": "signature",
+                        "type": "bytes",
+                        "internalType": "bytes"
+                    },
+                    {
+                        "name": "salt",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "expiry",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "registerOperatorWithChurn",
+        "inputs": [
+            {
+                "name": "quorumNumbers",
+                "type": "bytes",
+                "internalType": "bytes"
+            },
+            {
+                "name": "socket",
+                "type": "string",
+                "internalType": "string"
+            },
+            {
+                "name": "params",
+                "type": "tuple",
+                "internalType": "struct IBLSApkRegistry.PubkeyRegistrationParams",
+                "components": [
+                    {
+                        "name": "pubkeyRegistrationSignature",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G1Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pubkeyG1",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G1Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "pubkeyG2",
+                        "type": "tuple",
+                        "internalType": "struct BN254.G2Point",
+                        "components": [
+                            {
+                                "name": "X",
+                                "type": "uint256[2]",
+                                "internalType": "uint256[2]"
+                            },
+                            {
+                                "name": "Y",
+                                "type": "uint256[2]",
+                                "internalType": "uint256[2]"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "operatorKickParams",
+                "type": "tuple[]",
+                "internalType": "struct IRegistryCoordinator.OperatorKickParam[]",
+                "components": [
+                    {
+                        "name": "quorumNumber",
+                        "type": "uint8",
+                        "internalType": "uint8"
+                    },
+                    {
+                        "name": "operator",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ]
+            },
+            {
+                "name": "churnApproverSignature",
+                "type": "tuple",
+                "internalType": "struct ISignatureUtils.SignatureWithSaltAndExpiry",
+                "components": [
+                    {
+                        "name": "signature",
+                        "type": "bytes",
+                        "internalType": "bytes"
+                    },
+                    {
+                        "name": "salt",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "expiry",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            },
+            {
+                "name": "operatorSignature",
+                "type": "tuple",
+                "internalType": "struct ISignatureUtils.SignatureWithSaltAndExpiry",
+                "components": [
+                    {
+                        "name": "signature",
+                        "type": "bytes",
+                        "internalType": "bytes"
+                    },
+                    {
+                        "name": "salt",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "expiry",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ]
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
     },
     {
         "type": "function",
@@ -409,6 +1031,113 @@ const registryCoordinatorAbi = [
     },
     {
         "type": "function",
+        "name": "renounceOwnership",
+        "inputs": [],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "serviceManager",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "contract IServiceManager"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "setChurnApprover",
+        "inputs": [
+            {
+                "name": "_churnApprover",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setEjectionCooldown",
+        "inputs": [
+            {
+                "name": "_ejectionCooldown",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setEjector",
+        "inputs": [
+            {
+                "name": "_ejector",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setOperatorSetParams",
+        "inputs": [
+            {
+                "name": "quorumNumber",
+                "type": "uint8",
+                "internalType": "uint8"
+            },
+            {
+                "name": "operatorSetParams",
+                "type": "tuple",
+                "internalType": "struct IRegistryCoordinator.OperatorSetParam",
+                "components": [
+                    {
+                        "name": "maxOperatorCount",
+                        "type": "uint32",
+                        "internalType": "uint32"
+                    },
+                    {
+                        "name": "kickBIPsOfOperatorStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    },
+                    {
+                        "name": "kickBIPsOfTotalStake",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ]
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setPauserRegistry",
+        "inputs": [
+            {
+                "name": "newPauserRegistry",
+                "type": "address",
+                "internalType": "contract IPauserRegistry"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
         "name": "stakeRegistry",
         "inputs": [],
         "outputs": [
@@ -419,6 +1148,76 @@ const registryCoordinatorAbi = [
             }
         ],
         "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "transferOwnership",
+        "inputs": [
+            {
+                "name": "newOwner",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "unpause",
+        "inputs": [
+            {
+                "name": "newPausedStatus",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "updateOperators",
+        "inputs": [
+            {
+                "name": "operators",
+                "type": "address[]",
+                "internalType": "address[]"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "updateOperatorsForQuorum",
+        "inputs": [
+            {
+                "name": "operatorsPerQuorum",
+                "type": "address[][]",
+                "internalType": "address[][]"
+            },
+            {
+                "name": "quorumNumbers",
+                "type": "bytes",
+                "internalType": "bytes"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "updateSocket",
+        "inputs": [
+            {
+                "name": "socket",
+                "type": "string",
+                "internalType": "string"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
     },
     {
         "type": "event",
@@ -454,6 +1253,19 @@ const registryCoordinatorAbi = [
                 "type": "address",
                 "indexed": false,
                 "internalType": "address"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "Initialized",
+        "inputs": [
+            {
+                "name": "version",
+                "type": "uint8",
+                "indexed": false,
+                "internalType": "uint8"
             }
         ],
         "anonymous": false
@@ -534,6 +1346,82 @@ const registryCoordinatorAbi = [
     },
     {
         "type": "event",
+        "name": "OperatorSocketUpdate",
+        "inputs": [
+            {
+                "name": "operatorId",
+                "type": "bytes32",
+                "indexed": true,
+                "internalType": "bytes32"
+            },
+            {
+                "name": "socket",
+                "type": "string",
+                "indexed": false,
+                "internalType": "string"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "OwnershipTransferred",
+        "inputs": [
+            {
+                "name": "previousOwner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "newOwner",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "Paused",
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "newPausedStatus",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "PauserRegistrySet",
+        "inputs": [
+            {
+                "name": "pauserRegistry",
+                "type": "address",
+                "indexed": false,
+                "internalType": "contract IPauserRegistry"
+            },
+            {
+                "name": "newPauserRegistry",
+                "type": "address",
+                "indexed": false,
+                "internalType": "contract IPauserRegistry"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
         "name": "QuorumBlockNumberUpdated",
         "inputs": [
             {
@@ -544,6 +1432,25 @@ const registryCoordinatorAbi = [
             },
             {
                 "name": "blocknumber",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    },
+    {
+        "type": "event",
+        "name": "Unpaused",
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "newPausedStatus",
                 "type": "uint256",
                 "indexed": false,
                 "internalType": "uint256"
