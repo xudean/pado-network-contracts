@@ -24,11 +24,11 @@ async function call() {
         console.log(`caller is:${caller}`)
         // const strategy = await getStrategy(0,0)
         // console.log(strategy)
-        await addStrategies()
-        console.log("addStrategies success!")
+        // await addStrategies()
+        // console.log("addStrategies success!")
         // await removeStrategies(0, [1]);
         // console.log("removeStrategies success!")
-
+        await getCurrentTotalStake()
 
 /*        for(let i = 0; i < 13; i++){
         // the removal of lower index entries will cause a shift in the indices of the other strategies to remove
@@ -66,6 +66,16 @@ async function addStrategies() {
     const tx = await contract.addStrategies(0, holeskyFullStrategies)
     await tx.wait();
 }
+
+async function getCurrentTotalStake(){
+    // Send a transaction to the createNewTask function
+    const total = await contract.getCurrentTotalStake(0);
+
+    console.log(`total: ${total}`);
+}
+
+
+
 
 // call command
 // npx hardhat run --network holesky script/js/stakeRegistry.js
