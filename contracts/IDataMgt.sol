@@ -17,7 +17,7 @@ struct DataInfo {
     string dataTag; // The tag of the data
     PriceInfo priceInfo; // The price of the data
     bytes dataContent; // The content of the data
-    bytes[] publicKeys; // The public key encrypting the data
+    bytes32[] workerIds; // The workerIds of workers participanting in  encrypting the data
     uint64 registeredTimestamp; // The timestamp at which the data was registered
     address owner; // The owner of the data
     bool deleted; // Whether the data is deleted
@@ -63,21 +63,17 @@ interface IDataMgt {
 
     /**
      * @notice Get all data registered by Data Provider
-     * @param includingDeleted Whether return the deleted data
      * @return return all data
      */
     function getAllData(
-        bool includingDeleted
     ) external view returns (DataInfo[] memory);
 
     /**
      * @notice Get data by owner
-     * @param includingDeleted Whether return the deleted data
      * @param owner The owner of data
      * @return return data owned by the owner
      */
     function getDataByOwner(
-        bool includingDeleted,
         address owner
     ) external view returns (DataInfo[] memory);
 

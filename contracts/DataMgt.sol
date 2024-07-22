@@ -8,13 +8,11 @@ import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema} from "./IDataMgt.sol";
  * @notice DataMgt - Data Management.
  */
 contract DataMgt is IDataMgt{
-    uint256 private _registry_count = 0;
-    mapping(bytes32 registryId => bytes[] publicKeys) private _registryIdToPublicKeys;
+    uint256 private _registryCount = 0;
+    mapping(bytes32 registryId => bytes32[] workerIds) private _registryIdToWorkerIds;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
     bytes32[] private _dataIds;
-    bytes32[] private _deletedDataIds;
 
-    mapping(bytes32 dataId => uint256 dataIndex) private _dataIdToIndex;
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
 
     /**
@@ -25,8 +23,8 @@ contract DataMgt is IDataMgt{
     function prepareRegistery(
         EncryptionSchema calldata encryptionSchema
     ) external returns (bytes32 registryId, bytes[] memory publicKeys) {
-        registryId = keccak256(abi.encode(encryptionSchema, _registry_count));
-        _registry_count++;
+        registryId = keccak256(abi.encode(encryptionSchema, _registryCount));
+        _registryCount++;
 
         // TODO
         publicKeys = new bytes[](0);
@@ -46,24 +44,23 @@ contract DataMgt is IDataMgt{
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
     ) external returns (bytes32) {
-        require(_registryIdToPublicKeys[registryId].length > 0, "invalid registryId");
+        require(_registryIdToWorkerIds[registryId].length > 0, "invalid registryId");
 
         DataInfo memory dataInfo = DataInfo({
                 dataId: registryId,
                 dataTag: dataTag,
                 priceInfo: priceInfo,
                 dataContent: dataContent,
-                publicKeys: _registryIdToPublicKeys[registryId],
+                workerIds: _registryIdToWorkerIds[registryId],
                 registeredTimestamp: uint64(block.timestamp),
                 owner: msg.sender,
                 deleted: false
             });
         _dataInfos[registryId] = dataInfo;
         _dataIds.push(registryId);
-        _dataIdToIndex[registryId] = _dataIds.length - 1;
         _dataIdListPerOwner[msg.sender].push(registryId);
 
-        delete _registryIdToPublicKeys[registryId];
+        delete _registryIdToWorkerIds[registryId];
 
         return registryId;
     }
@@ -71,69 +68,35 @@ contract DataMgt is IDataMgt{
 
     /**
      * @notice Get all data registered by Data Provider
-     * @param includingDeleted Whether return the deleted data
      * @return return all data
      */
     function getAllData(
-        bool includingDeleted
     ) external view returns (DataInfo[] memory) {
         uint256 dataIdLength = _dataIds.length;
-        if (includingDeleted) {
-            dataIdLength += _deletedDataIds.length;
-        }
 
         DataInfo[] memory dataInfoList = new DataInfo[](dataIdLength);
-        uint256 listIndex = 0;
-        for (uint256 i = 0; i < _dataIds.length; i++) {
-            dataInfoList[listIndex] = _dataInfos[_dataIds[i]];
-            listIndex++;
+        for (uint256 i = 0; i < dataIdLength; i++) {
+            dataInfoList[i] = _dataInfos[_dataIds[i]];
         }
 
-        for (uint256 i = 0; i < _deletedDataIds.length; i++) {
-            dataInfoList[listIndex] = _dataInfos[_deletedDataIds[i]];
-            listIndex++;
-        }
         return dataInfoList;
     }
 
     /**
      * @notice Get data by owner
-     * @param includingDeleted Whether return the deleted data
      * @param owner The owner of data
      * @return return data owned by the owner
      */
     function getDataByOwner(
-        bool includingDeleted,
         address owner
     ) external view returns (DataInfo[] memory) {
         bytes32[] storage dataIdList = _dataIdListPerOwner[owner];
 
-        if (includingDeleted) {
-            DataInfo[] memory allDataInfo = new DataInfo[](dataIdList.length);
-            for (uint256 i = 0; i < dataIdList.length; i++) {
-                allDataInfo[i] = _dataInfos[dataIdList[i]];
-            }
-            return allDataInfo;
-        }
-
-        uint256 length = 0;
+        DataInfo[] memory allDataInfo = new DataInfo[](dataIdList.length);
         for (uint256 i = 0; i < dataIdList.length; i++) {
-            DataInfo storage d = _dataInfos[dataIdList[i]];
-            if (!d.deleted) {
-                length++;
-            }
+            allDataInfo[i] = _dataInfos[dataIdList[i]];
         }
-
-        DataInfo[] memory dataInfo = new DataInfo[](length);
-        uint256 infoIndex = 0;
-        for (uint256 i = 0; i < dataIdList.length; i++) {
-            DataInfo storage d = _dataInfos[dataIdList[i]];
-            if (!d.deleted) {
-                dataInfo[infoIndex] = d;
-                infoIndex++;
-            }
-        }
-        return dataInfo;
+        return allDataInfo;
     }
 
     /**
@@ -161,12 +124,5 @@ contract DataMgt is IDataMgt{
         require(!dataInfo.deleted, "data already deleted");
 
         dataInfo.deleted = true;
-        uint256 toDeleteIndex = _dataIdToIndex[dataId];
-        _dataIds[toDeleteIndex] = _dataIds[_dataIds.length - 1];
-        _dataIds.pop();
-        
-        _deletedDataIds.push(dataId);
-
-        delete _dataIdToIndex[dataId];
     }
 }
