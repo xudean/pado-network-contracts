@@ -1,0 +1,14 @@
+{
+  "addresses": {
+    "serviceManagerAddress": "",
+    "registryCoordinatorAddress": "",
+    "stakeRegistryAddress": "",
+    "indexRegistryAddress": "",
+    "blsApkRegistryAddress": "",
+    "proxyAdminAddress": "",
+    "avsDirectoryAddress": "",
+    "rewardsCoordinatorAddress": "",
+    "delegationManagerAddress": "",
+    "eigenLayerPauserReg": ""
+  }
+}
