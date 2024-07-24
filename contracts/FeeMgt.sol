@@ -2,19 +2,16 @@
 
 pragma solidity ^0.8.20;
 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IFeeMgt, FeeTokenInfo} from "./interface/IFeeMgt.sol";
+import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
 
-struct Allowance {
-    uint256 free;
-    uint256 locked;
-}
 
 /**
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
-contract FeeMgt is IFeeMgt {
+contract FeeMgt is IFeeMgt, Initializable {
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
 
     string[] private _symbolList;
@@ -22,6 +19,12 @@ contract FeeMgt is IFeeMgt {
     mapping(address dataUser => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForDataUser;
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
+
+    address private constant MAGIC_ADDRESS_FOR_ETH = address(uint160(uint256(keccak256(bytes("ETH")))));
+    
+    function initialize() public initializer {
+        _addFeeToken(string(bytes("ETH")), MAGIC_ADDRESS_FOR_ETH);
+    }
 
     /**
      * @notice TaskMgt contract request transfer tokens.
@@ -32,9 +35,9 @@ contract FeeMgt is IFeeMgt {
         string calldata tokenSymbol,
         uint256 amount
     ) payable external {
-        if (keccak256(abi.encode(tokenSymbol)) == keccak256(abi.encode("ETH"))) {
+        require(isSupportToken(tokenSymbol), "not supported token");
+        if (_tokenAddressForSymbol[tokenSymbol] == MAGIC_ADDRESS_FOR_ETH) {
             require(amount == msg.value, "numTokens is not correct");
-
         }
         else {
             require(_tokenAddressForSymbol[tokenSymbol] != address(0), "tokenSymbol is not supported");
@@ -68,6 +71,7 @@ contract FeeMgt is IFeeMgt {
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external returns (bool) {
+        require(isSupportToken(tokenSymbol), "not supported token");
         uint256 toLockAmount = workerOwners.length * computingPrice + dataProviders.length * dataPrice;
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
 
@@ -101,6 +105,7 @@ contract FeeMgt is IFeeMgt {
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external returns (bool) {
+        require(isSupportToken(tokenSymbol), "not supported token");
         // TODO
         if (taskResultStatus == 0) {}
 
@@ -114,7 +119,7 @@ contract FeeMgt is IFeeMgt {
         require(lockedAmount >= expectedAllowance, "locked not enough");
 
         if (expectedAllowance > 0) {
-            if (keccak256(abi.encode(tokenSymbol)) == keccak256(abi.encode("ETH"))) {
+            if (_tokenAddressForSymbol[tokenSymbol] == MAGIC_ADDRESS_FOR_ETH) {
                 for (uint256 i = 0; i < workerOwners.length; i++) {
                     payable(workerOwners[i]).transfer(computingPrice);
                 }
@@ -155,6 +160,16 @@ contract FeeMgt is IFeeMgt {
      * @return Returns true if the adding is successful.
      */
     function addFeeToken(string calldata tokenSymbol, address tokenAddress) external returns (bool) {
+        return _addFeeToken(tokenSymbol, tokenAddress);
+    }
+
+    /**
+     * @notice Add the fee token.
+     * @param tokenSymbol The new fee token symbol.
+     * @param tokenAddress The new fee token address.
+     * @return Returns true if the adding is successful.
+     */
+    function _addFeeToken(string memory tokenSymbol, address tokenAddress) internal returns (bool) {
         require(_tokenAddressForSymbol[tokenSymbol] == address(0), "token symbol already exists");
 
         _tokenAddressForSymbol[tokenSymbol] = tokenAddress;
@@ -186,7 +201,8 @@ contract FeeMgt is IFeeMgt {
      * @notice Determine whether a token can pay the handling fee.
      * @return Returns true if a token can pay fee, otherwise returns false.
      */
-    function isSupportToken(string calldata tokenSymbol) external view returns (bool) {
+    function isSupportToken(string calldata tokenSymbol) public view returns (bool) {
         return _tokenAddressForSymbol[tokenSymbol] != address(0);
     }
+
 }

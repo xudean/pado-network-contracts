@@ -9,7 +9,13 @@ struct FeeTokenInfo {
     string symbol; // Fee token symbol.
     address tokenAddress; // Fee token address.
 }
-
+/**
+ * @notice A struct representing allowance for data user.
+ */
+struct Allowance {
+    uint256 free;
+    uint256 locked;
+}
 /**
  * @title IFeeMgt
  * @notice FeeMgt - Fee Management interface.
