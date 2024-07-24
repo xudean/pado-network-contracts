@@ -3,7 +3,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IFeeMgt, FeeTokenInfo} from "./IFeeMgt.sol";
+import {IFeeMgt, FeeTokenInfo} from "./interface/IFeeMgt.sol";
 
 struct Allowance {
     uint256 free;

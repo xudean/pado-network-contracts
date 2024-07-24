@@ -2,67 +2,88 @@
 
 pragma solidity ^0.8.20;
 
-import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema} from "./IDataMgt.sol"; 
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
 /**
  * @title DataMgt
- * @notice DataMgt - Data Management.
+ * @notice DataMgt - Data Management Contract.
  */
-contract DataMgt is IDataMgt{
-    uint256 private _registryCount = 0;
-    mapping(bytes32 registryId => bytes32[] workerIds) private _registryIdToWorkerIds;
+contract DataMgt is Initializable, IDataMgt{
+    uint256 private _registryCount;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
     bytes32[] private _dataIds;
 
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
+    
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    /// constructor() {
+    ///     _disableInitializers();
+    /// }
+
+    function initialize() external initializer {
+        _registryCount = 0;
+    }
 
     /**
      * @notice Data Provider prepare to register confidential data to PADO Network.
      * @param encryptionSchema EncryptionSchema
-     * @return registryId and publicKeys Registry id and public keys
+     * @return dataId and publicKeys data id and public keys
      */
-    function prepareRegistery(
+    function prepareRegistry(
         EncryptionSchema calldata encryptionSchema
-    ) external returns (bytes32 registryId, bytes[] memory publicKeys) {
-        registryId = keccak256(abi.encode(encryptionSchema, _registryCount));
+    ) external returns (bytes32 dataId, bytes[] memory publicKeys) {
+        dataId = keccak256(abi.encode(encryptionSchema, _registryCount));
         _registryCount++;
 
         // TODO
-        publicKeys = new bytes[](0);
+        publicKeys = new bytes[](1);
+        publicKeys[0] = bytes("test");
+
+        bytes32[] memory workerIds = new bytes32[](1);
+        workerIds[0] = dataId;
+
+        DataInfo memory dataInfo = DataInfo({
+                dataId: dataId,
+                dataTag: "",
+                priceInfo: PriceInfo({tokenSymbol:"", price:0}),
+                dataContent: new bytes(0),
+                workerIds: workerIds,
+                registeredTimestamp: uint64(block.timestamp),
+                owner: msg.sender,
+                status: DataStatus.REGISTERING
+            });
+        _dataInfos[dataId] = dataInfo;
+        _dataIds.push(dataId);
+        _dataIdListPerOwner[msg.sender].push(dataId);
+
+        emit PrepareRegistry(dataId, publicKeys);
     }
 
     /**
      * @notice Data Provider register confidential data to PADO Network.
-     * @param registryId Registry id for registry, returned by prepareRegistry.
+     * @param dataId Data id for registry, returned by prepareRegistry.
      * @param dataTag The tag of data, providing basic information about data.
      * @param priceInfo The price infomation of data.
      * @param dataContent The content of data.
      * @return The UID of the data
      */
     function register(
-        bytes32 registryId,
+        bytes32 dataId,
         string calldata dataTag,
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
     ) external returns (bytes32) {
-        require(_registryIdToWorkerIds[registryId].length > 0, "invalid registryId");
+        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "invalid dataId");
 
-        DataInfo memory dataInfo = DataInfo({
-                dataId: registryId,
-                dataTag: dataTag,
-                priceInfo: priceInfo,
-                dataContent: dataContent,
-                workerIds: _registryIdToWorkerIds[registryId],
-                registeredTimestamp: uint64(block.timestamp),
-                owner: msg.sender,
-                deleted: false
-            });
-        _dataInfos[registryId] = dataInfo;
-        _dataIds.push(registryId);
-        _dataIdListPerOwner[msg.sender].push(registryId);
+        DataInfo storage dataInfo = _dataInfos[dataId];
 
-        delete _registryIdToWorkerIds[registryId];
+        dataInfo.dataTag = dataTag;
+        dataInfo.priceInfo = priceInfo;
+        dataInfo.dataContent = dataContent;
 
-        return registryId;
+        dataInfo.status = DataStatus.REGISTERED;
+
+        return dataId;
     }
     
 
@@ -121,8 +142,8 @@ contract DataMgt is IDataMgt{
     ) external {
         DataInfo storage dataInfo = _dataInfos[dataId];
         require(dataInfo.dataId != 0, "data not exist");
-        require(!dataInfo.deleted, "data already deleted");
+        require(dataInfo.status != DataStatus.DELETED, "data already deleted");
 
-        dataInfo.deleted = true;
+        dataInfo.status = DataStatus.DELETED;
     }
 }

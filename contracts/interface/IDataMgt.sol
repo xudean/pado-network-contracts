@@ -10,6 +10,16 @@ struct PriceInfo {
 }
 
 /**
+ * @notice A enum representing data staus
+ */
+enum DataStatus {
+    NEVER_USED,
+    REGISTERING,
+    REGISTERED,
+    DELETED
+}
+
+/**
  * @notice A struct representing a piece of data
  */
 struct DataInfo {
@@ -20,7 +30,7 @@ struct DataInfo {
     bytes32[] workerIds; // The workerIds of workers participanting in  encrypting the data
     uint64 registeredTimestamp; // The timestamp at which the data was registered
     address owner; // The owner of the data
-    bool deleted; // Whether the data is deleted
+    DataStatus status; // The status of the data
 }
 
 /**
@@ -36,25 +46,30 @@ struct EncryptionSchema {
  * @notice DataMgt - Data Management interface.
  */
 interface IDataMgt {
+    // emit in prepareRegistry
+    event PrepareRegistry(bytes32 dataId, bytes[] publicKeys);
+
+    // emit in register
+    event Register(bytes32);
     /**
      * @notice Data Provider prepare to register confidential data to PADO Network.
      * @param encryptionSchema EncryptionSchema
-     * @return registryId and publicKeys Registry id and public keys
+     * @return dataId and publicKeys Data id and public keys
      */
-    function prepareRegistery(
+    function prepareRegistry(
         EncryptionSchema calldata encryptionSchema
-    ) external returns (bytes32 registryId, bytes[] memory publicKeys);
+    ) external returns (bytes32 dataId, bytes[] memory publicKeys);
 
     /**
      * @notice Data Provider register confidential data to PADO Network.
-     * @param registryId Registry id for registry, returned by prepareRegistry.
+     * @param dataId Data id for registry, returned by prepareRegistry.
      * @param dataTag The tag of data, providing basic information about data.
      * @param priceInfo The price infomation of data.
      * @param dataContent The content of data.
      * @return The UID of the data
      */
     function register(
-        bytes32 registryId,
+        bytes32 dataId,
         string calldata dataTag,
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
