@@ -94,4 +94,12 @@ interface IFeeMgt {
      * @return Returns true if a token can pay fee, otherwise returns false.
      */
     function isSupportToken(string calldata tokenSymbol) external view returns (bool);
+
+    /**
+     * @notice Get allowance info.
+     * @param dataUser The address of data user
+     * @param tokenSymbol The token symbol for the data user
+     * @return Allowance for the data user
+     */
+    function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
 }

@@ -205,4 +205,13 @@ contract FeeMgt is IFeeMgt, Initializable {
         return _tokenAddressForSymbol[tokenSymbol] != address(0);
     }
 
+    /**
+     * @notice Get allowance info.
+     * @param dataUser The address of data user
+     * @param tokenSymbol The token symbol for the data user
+     * @return Allowance for the data user
+     */
+    function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory) {
+        return _allowanceForDataUser[dataUser][tokenSymbol];
+    }
 }
