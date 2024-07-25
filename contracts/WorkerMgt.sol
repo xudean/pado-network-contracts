@@ -13,17 +13,13 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
-    event WorkerRegistry(
-        uint32[] taskTypes,
-        bytes32 publicKey,
-        bytes quorumNumbers,
-        string socket
-    );
-
+    event WorkerRegistry(uint32[] taskTypes, bytes32 publicKey, bytes quorumNumbers, string socket);
+    event SelectWorkers(bytes32 dataId, bytes32[] workers);
     RegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
     mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
     bytes32[] public workerIds;
+    mapping(address => uint32) addressNonce;
 
     constructor() {
         _disableInitializers();
@@ -65,10 +61,17 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external returns (bytes32) {
-        _checkWorkerParam(taskTypes,publicKey,quorumNumbers,socket,params,operatorSignature);
+        _checkWorkerParam(
+            taskTypes,
+            publicKey,
+            quorumNumbers,
+            socket,
+            params,
+            operatorSignature
+        );
         //result is operatorId,check whether operator has registried to eigenlayer.operatorId is same as workerId
         bytes32 operatorId = registryCoordinator.getOperatorId(msg.sender);
-        
+
         if (operatorId == bytes32(0)) {
             operatorId = BN254.hashG1Point(params.pubkeyG1);
             // Handle the case where operatorId is not register
@@ -80,7 +83,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             );
         }
         //check is in workMgt
-        require(!checkWorkerRegistered(operatorId),"worker has already registered");
+        require(
+            !checkWorkerRegistered(operatorId),
+            "worker has already registered"
+        );
         //build worker
         Worker memory worker = Worker({
             workerId: operatorId,
@@ -113,9 +119,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes32 taskId,
         uint32 taskType,
         ComputingInfoRequest calldata computingInfoRequest
-    ) external returns (bool) {
-        //select workers
-    }
+    ) external returns (bool) {}
 
     /**
      * @notice DataMgt contract request selecting workers which will encrypt data and run the task.
@@ -128,7 +132,29 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes32 dataId,
         uint32 t,
         uint32 n
-    ) external returns (bool) {}
+    ) external returns (bool) {
+        //generate a random number
+        uint256 randomness = getRandomNumber();
+        require(workerIds.length >= n, "Not enough workers to provide computation");
+
+        uint256[] memory indices = new uint256[](workerIds.length);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            indices[i] = i;
+        }
+
+        // Fisher-Yates shuffle algorithm
+        for (uint256 i = 0; i < n; i++) {
+            uint256 j = i + (randomness % (workerIds.length - i));
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+            randomness = uint256(keccak256(abi.encodePacked(randomness, i)));
+        }
+
+        // Select the first n indices
+        for (uint256 i = 0; i < n; i++) {
+            dataEncryptedByWorkers[dataId].push(workerIds[indices[i]]);
+        }
+        return true;
+    }
 
     /**
      * @notice Get wokers whose public keys will be used to encrypt data.
@@ -137,7 +163,9 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function getMultiplePublicKeyWorkers(
         bytes32 dataId
-    ) external view returns (bytes32[] memory) {}
+    ) external view returns (bytes32[] memory) {
+        return dataEncryptedByWorkers[dataId];
+    }
 
     /**
      * @notice Get workers which will run the task.
@@ -253,4 +281,18 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal {}
+
+    //generate a random number
+    function getRandomNumber() internal returns (uint256) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                block.timestamp,
+                msg.sender,
+                addressNonce[msg.sender]
+            )
+        );
+        //This operation consumes some gas but guarantees the quality of the random numbers generated.
+        addressNonce[msg.sender] = addressNonce[msg.sender] + 1;
+        return uint256(hash);
+    }
 }
