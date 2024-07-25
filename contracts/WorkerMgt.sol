@@ -16,7 +16,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes quorumNumbers,
         string socket
     );
-    RegistryCoordinator public immutable registryCoordinator;
+    RegistryCoordinator public  registryCoordinator;
     mapping(bytes32 => Worker) public workers;
     mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
     bytes32[] public workerIds;
