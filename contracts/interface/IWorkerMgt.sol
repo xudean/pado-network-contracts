@@ -41,7 +41,7 @@ interface IWorkerMgt {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external;
+    ) external returns (bytes32);
 
     /**
      * @notice TaskMgt contract request selecting workers which will run the task.

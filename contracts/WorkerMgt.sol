@@ -4,10 +4,13 @@ pragma solidity ^0.8.0;
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
 import {ComputingInfoRequest, WorkerType, Worker, WorkerStatus} from "./types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
+import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
+
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     event WorkerRegistry(
@@ -16,7 +19,8 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes quorumNumbers,
         string socket
     );
-    RegistryCoordinator public  registryCoordinator;
+
+    RegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
     mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
     bytes32[] public workerIds;
@@ -60,22 +64,26 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {
-        bytes32 workerUniqueId = keccak256(abi.encodePacked(publicKey[0]));
-        require(
-            !checkWorkerRegistered(workerUniqueId),
-            "worker has already registered"
-        );
-        //registry to eigenlayer
-        registryCoordinator.registerOperator(
-            quorumNumbers,
-            socket,
-            params,
-            operatorSignature
-        );
+    ) external returns (bytes32) {
+        _checkWorkerParam(taskTypes,publicKey,quorumNumbers,socket,params,operatorSignature);
+        //result is operatorId,check whether operator has registried to eigenlayer.operatorId is same as workerId
+        bytes32 operatorId = registryCoordinator.getOperatorId(msg.sender);
+        
+        if (operatorId == bytes32(0)) {
+            operatorId = BN254.hashG1Point(params.pubkeyG1);
+            // Handle the case where operatorId is not register
+            registryCoordinator.registerOperator(
+                quorumNumbers,
+                socket,
+                params,
+                operatorSignature
+            );
+        }
+        //check is in workMgt
+        require(!checkWorkerRegistered(operatorId),"worker has already registered");
         //build worker
         Worker memory worker = Worker({
-            workerId: workerUniqueId,
+            workerId: operatorId,
             workerType: WorkerType.EIGENLAYER,
             name: "",
             desc: "",
@@ -88,9 +96,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             failTasksAmount: 0,
             delegationAmount: 0
         });
-        workers[workerUniqueId] = worker;
-        workerIds.push(workerUniqueId);
-        emit WorkerRegistry(taskTypes, workerUniqueId, quorumNumbers, socket);
+        workers[operatorId] = worker;
+        workerIds.push(operatorId);
+        emit WorkerRegistry(taskTypes, operatorId, quorumNumbers, socket);
+        return operatorId;
     }
 
     /**
@@ -234,4 +243,14 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     ) public view returns (bool) {
         return workers[_workerId].workerId == _workerId;
     }
+
+    //==============================internal function====================
+    function _checkWorkerParam(
+        uint32[] calldata taskTypes,
+        bytes[] calldata publicKey,
+        bytes calldata quorumNumbers,
+        string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) internal {}
 }
