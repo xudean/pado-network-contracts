@@ -40,13 +40,14 @@ contract DataMgt is Initializable, IDataMgt{
         publicKeys[0] = bytes("test");
 
         bytes32[] memory workerIds = new bytes32[](1);
-        workerIds[0] = dataId;
+        workerIds[0] = keccak256(abi.encode(msg.sender));
 
         DataInfo memory dataInfo = DataInfo({
                 dataId: dataId,
                 dataTag: "",
                 priceInfo: PriceInfo({tokenSymbol:"", price:0}),
                 dataContent: new bytes(0),
+                encryptionSchema: encryptionSchema,
                 workerIds: workerIds,
                 registeredTimestamp: uint64(block.timestamp),
                 owner: msg.sender,

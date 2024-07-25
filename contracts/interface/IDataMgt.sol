@@ -22,23 +22,24 @@ enum DataStatus {
 /**
  * @notice A struct representing a piece of data
  */
-struct DataInfo {
-    bytes32 dataId; // The identifier of the data
-    string dataTag; // The tag of the data
-    PriceInfo priceInfo; // The price of the data
-    bytes dataContent; // The content of the data
-    bytes32[] workerIds; // The workerIds of workers participanting in  encrypting the data
-    uint64 registeredTimestamp; // The timestamp at which the data was registered
-    address owner; // The owner of the data
-    DataStatus status; // The status of the data
+struct EncryptionSchema {
+    uint32 t; // threshold
+    uint32 n; // total amount of nodes
 }
 
 /**
  * @notice A struct representing a piece of data
  */
-struct EncryptionSchema {
-    uint32 t; // threshold
-    uint32 n; // total amount of nodes
+struct DataInfo {
+    bytes32 dataId; // The identifier of the data
+    string dataTag; // The tag of the data
+    PriceInfo priceInfo; // The price of the data
+    bytes dataContent; // The content of the data
+    EncryptionSchema encryptionSchema; // The encryption schema
+    bytes32[] workerIds; // The workerIds of workers participanting in  encrypting the data
+    uint64 registeredTimestamp; // The timestamp at which the data was registered
+    address owner; // The owner of the data
+    DataStatus status; // The status of the data
 }
 
 /**
