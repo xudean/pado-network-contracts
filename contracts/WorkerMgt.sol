@@ -9,7 +9,7 @@ import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinato
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract WorkerMgt is IWorkerMgt, Initializable, OwnableUpgradeable {
+contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     event WorkerRegistry(
         uint32[] taskTypes,
         bytes32 publicKey,
@@ -18,14 +18,18 @@ contract WorkerMgt is IWorkerMgt, Initializable, OwnableUpgradeable {
     );
     RegistryCoordinator public immutable registryCoordinator;
     mapping(bytes32 => Worker) public workers;
+    mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
     bytes32[] public workerIds;
 
-    constructor(RegistryCoordinator _registryCoordinator) {
-        registryCoordinator = _registryCoordinator;
+    constructor() {
+        _disableInitializers();
     }
 
-    function initialize() external initializer {
-        _transferOwnership(msg.sender);
+    function initialize(
+        RegistryCoordinator _registryCoordinator
+    ) external initializer {
+        registryCoordinator = _registryCoordinator;
+        __Ownable_init();
     }
 
     /**
@@ -58,7 +62,10 @@ contract WorkerMgt is IWorkerMgt, Initializable, OwnableUpgradeable {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {
         bytes32 workerUniqueId = keccak256(abi.encodePacked(publicKey[0]));
-        require(!checkWorkerRegistered(workerUniqueId),"worker has already registered");
+        require(
+            !checkWorkerRegistered(workerUniqueId),
+            "worker has already registered"
+        );
         //registry to eigenlayer
         registryCoordinator.registerOperator(
             quorumNumbers,
@@ -97,7 +104,9 @@ contract WorkerMgt is IWorkerMgt, Initializable, OwnableUpgradeable {
         bytes32 taskId,
         uint32 taskType,
         ComputingInfoRequest calldata computingInfoRequest
-    ) external returns (bool) {}
+    ) external returns (bool) {
+        //select workers
+    }
 
     /**
      * @notice DataMgt contract request selecting workers which will encrypt data and run the task.
@@ -220,7 +229,9 @@ contract WorkerMgt is IWorkerMgt, Initializable, OwnableUpgradeable {
     ) external view returns (address[] memory) {}
 
     //==============================helper function======================
-    function checkWorkerRegistered(bytes32 _workerId) public view returns (bool) {
+    function checkWorkerRegistered(
+        bytes32 _workerId
+    ) public view returns (bool) {
         return workers[_workerId].workerId == _workerId;
     }
 }

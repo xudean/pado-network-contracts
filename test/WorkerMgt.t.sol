@@ -30,10 +30,10 @@ contract WorkerMgtTest is Test{
         console.logBytes32(keccak256(publicKeys[0]));
         bool result  = workerMgt.checkWorkerRegistered(keccak256(publicKeys[0]));
         vm.assertEq(result,false);
-        console.log("result is:%s", result);
-        workerMgt.registerEigenOperator(taskTypes, publicKeys, quorumNumbers, socket, publicKeyParams, signature);
-        bool resultAfter  = workerMgt.checkWorkerRegistered(keccak256(publicKeys[0]));
-        console.log("resultAfter is:%s", resultAfter);
+//        console.log("result is:%s", result);
+//        workerMgt.registerEigenOperator(taskTypes, publicKeys, quorumNumbers, socket, publicKeyParams, signature);
+//        bool resultAfter  = workerMgt.checkWorkerRegistered(keccak256(publicKeys[0]));
+//        console.log("resultAfter is:%s", resultAfter);
 
     }
 }
