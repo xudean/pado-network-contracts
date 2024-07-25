@@ -74,7 +74,7 @@ interface IWorkerMgt {
      * @param dataId The data id.
      * @return Returns the array of worker id.
      */
-    function getMultiplePublicKeyWorkers(bytes32 dataId) external view returns (bytes32[] memory);
+    function getMultiplePublicKeyWorkers(bytes32 dataId) external view returns (bytes[] memory);
 
 /**
  * @notice Get workers which will run the task.

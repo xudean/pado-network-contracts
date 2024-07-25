@@ -13,7 +13,12 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
-    event WorkerRegistry(uint32[] taskTypes, bytes32 publicKey, bytes quorumNumbers, string socket);
+    event WorkerRegistry(
+        uint32[] taskTypes,
+        bytes32 publicKey,
+        bytes quorumNumbers,
+        string socket
+    );
     event SelectWorkers(bytes32 dataId, bytes32[] workers);
     RegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
@@ -135,7 +140,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     ) external returns (bool) {
         //generate a random number
         uint256 randomness = getRandomNumber();
-        require(workerIds.length >= n, "Not enough workers to provide computation");
+        require(
+            workerIds.length >= n,
+            "Not enough workers to provide computation"
+        );
 
         uint256[] memory indices = new uint256[](workerIds.length);
         for (uint256 i = 0; i < workerIds.length; i++) {
@@ -151,6 +159,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
 
         // Select the first n indices
         for (uint256 i = 0; i < n; i++) {
+            //save workerId
             dataEncryptedByWorkers[dataId].push(workerIds[indices[i]]);
         }
         return true;
@@ -163,8 +172,14 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function getMultiplePublicKeyWorkers(
         bytes32 dataId
-    ) external view returns (bytes32[] memory) {
-        return dataEncryptedByWorkers[dataId];
+    ) external view returns (bytes[] memory) {
+        bytes32[] memory selectedWorkerIds = dataEncryptedByWorkers[dataId];
+        bytes[] memory selectedPublicKeys = new bytes[](selectedWorkerIds.length);
+        for (uint256 i = 0; i < selectedWorkerIds.length; i++) {
+            Worker memory worker = workers[selectedWorkerIds[i]];
+            selectedPublicKeys[i] = worker.publicKey;
+        }
+        return selectedPublicKeys;
     }
 
     /**
