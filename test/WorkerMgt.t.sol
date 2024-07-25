@@ -15,7 +15,8 @@ contract WorkerMgtTest is Test{
 
     function setUp() public {
         RegistryCoordinator registryCoordinator =  RegistryCoordinator(address(0));
-        workerMgt = new WorkerMgt(registryCoordinator);
+        workerMgt = new WorkerMgt();
+        workerMgt.initialize(registryCoordinator);
     }
 
     function testRegistryWorker() public {
