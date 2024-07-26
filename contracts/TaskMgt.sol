@@ -151,7 +151,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param array The array.
      * @return index The index of the target element. If not found, return max.
      */
-    function find(bytes32 target, bytes32[] memory array) internal pure returns (uint256 index) {
+    function _find(bytes32 target, bytes32[] memory array) internal pure returns (uint256 index) {
         index = type(uint256).max;
 
         for (uint256 i = 0; i < array.length; i++) {
@@ -166,10 +166,10 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @notice Remove pendingTaskIds and settle fee.
      * @param taskId The id of task.
      */
-    function onTaskCompleted(bytes32 taskId) internal {
+    function _onTaskCompleted(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
 
-        uint256 pendingIndex = find(taskId, _pendingTaskIds);
+        uint256 pendingIndex = _find(taskId, _pendingTaskIds);
         _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
         _pendingTaskIds.pop();
 
@@ -203,10 +203,10 @@ contract TaskMgt is ITaskMgt, Initializable{
         require(task.status == TaskStatus.PENDING, "the task status is not PENDING");
         ComputingInfo storage computingInfo = task.computingInfo;
 
-        uint256 waitingIndex = find(workerId, computingInfo.waitingList);
+        uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
         require(waitingIndex != type(uint256).max, "task id not in waiting list");
 
-        uint256 workerIndex = find(workerId, computingInfo.workerIds);
+        uint256 workerIndex = _find(workerId, computingInfo.workerIds);
         computingInfo.results[workerIndex] = result;
 
         uint256 waitingListLength = computingInfo.waitingList.length;
@@ -215,12 +215,12 @@ contract TaskMgt is ITaskMgt, Initializable{
         waitingListLength--;
 
         bytes32[] storage taskIds = _taskIdForWorker[workerId];
-        uint256 taskIndex = find(taskId, taskIds);
+        uint256 taskIndex = _find(taskId, taskIds);
         taskIds[taskIndex] = taskIds[taskIds.length - 1];
         taskIds.pop();
 
         if (waitingListLength == 0) {
-            onTaskCompleted(taskId);
+            _onTaskCompleted(taskId);
         }
 
         return true;
