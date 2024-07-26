@@ -23,10 +23,12 @@ struct Allowance {
 interface IFeeMgt {
     /**
      * @notice TaskMgt contract request transfer tokens.
+     * @param from The address from which transfer token.
      * @param tokenSymbol The token symbol
      * @param amount The amount of tokens to be transfered
      */
     function transferToken(
+        address from,
         string calldata tokenSymbol,
         uint256 amount
     ) payable external;

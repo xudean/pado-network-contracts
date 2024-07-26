@@ -29,6 +29,7 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param amount The amount of tokens to be transfered
      */
     function transferToken(
+        address from,
         string calldata tokenSymbol,
         uint256 amount
     ) payable external {
@@ -40,10 +41,10 @@ contract FeeMgt is IFeeMgt, Initializable {
             require(_tokenAddressForSymbol[tokenSymbol] != address(0), "tokenSymbol is not supported");
             
             address tokenAddress = _tokenAddressForSymbol[tokenSymbol];
-            IERC20(tokenAddress).transferFrom(tx.origin, address(this), amount);
+            IERC20(tokenAddress).transferFrom(from, address(this), amount);
         }
 
-        Allowance storage allowance = _allowanceForDataUser[tx.origin][tokenSymbol];
+        Allowance storage allowance = _allowanceForDataUser[from][tokenSymbol];
 
         allowance.free += amount;
     }
@@ -180,16 +181,21 @@ contract FeeMgt is IFeeMgt, Initializable {
      */
     function getFeeTokens() external view returns (FeeTokenInfo[] memory) {
         uint256 symbolListLength = _symbolList.length;
-        FeeTokenInfo[] memory tokenInfos = new FeeTokenInfo[](symbolListLength);
+        FeeTokenInfo[] memory tokenInfos = new FeeTokenInfo[](symbolListLength + 1);
 
         for (uint256 i = 0; i < _symbolList.length; i++) {
             string storage symbol = _symbolList[i];
 
             tokenInfos[i] = FeeTokenInfo({
-                    symbol: symbol,
-                    tokenAddress: _tokenAddressForSymbol[symbol]
+                symbol: symbol,
+                tokenAddress: _tokenAddressForSymbol[symbol]
             });
         }
+
+        tokenInfos[tokenInfos.length - 1] = FeeTokenInfo({
+            symbol: "ETH",
+            tokenAddress: address(0)
+        });
 
         return tokenInfos;
     }

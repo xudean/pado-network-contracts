@@ -76,18 +76,19 @@ contract TaskMgtTest is Test {
         // vm.expectEmit(true, true, true, true);
         emit ITaskMgt.WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
 
-        Allowance memory oldAllowance = feeMgt.getAllowance(tx.origin, tokenSymbol);
+        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
         assertEq(oldAllowance.locked, 0, "oldAllowance.locked not correct");
-        erc20.mint(tx.origin, 100);
-        vm.prank(address(tx.origin));
+        erc20.mint(msg.sender, 100);
+        vm.prank(address(msg.sender));
         erc20.approve(address(feeMgt), 3);
+        vm.prank(address(msg.sender));
         taskId = taskMgt.submitTask{value: 3}(
             0,
             consumerPk,
             dataId
         );
-        Allowance memory allowance = feeMgt.getAllowance(tx.origin, tokenSymbol);
+        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(allowance.free, 0, "allowance.free not correct");
         assertEq(allowance.locked, 3, "allowance.locked not correct");
     }

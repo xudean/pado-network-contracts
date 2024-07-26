@@ -79,7 +79,7 @@ contract TaskMgt is Initializable, ITaskMgt{
         
         // TODO computing price
         uint256 fee = priceInfo.price + workerIds.length * 1;
-        _feeMgt.transferToken{value: msg.value}(priceInfo.tokenSymbol, fee);
+        _feeMgt.transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, _taskCount));
         _taskCount++;
@@ -124,7 +124,7 @@ contract TaskMgt is Initializable, ITaskMgt{
         }
         _feeMgt.lock(
             taskId,
-            tx.origin,
+            msg.sender,
             priceInfo.tokenSymbol,
             COMPUTING_PRICE,
             workerOwners,
