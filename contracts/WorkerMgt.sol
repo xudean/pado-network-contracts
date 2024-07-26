@@ -13,13 +13,14 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
-    event WorkerRegistry(
-        uint32[] taskTypes,
-        bytes32 publicKey,
-        bytes quorumNumbers,
-        string socket
-    );
-    event SelectWorkers(bytes32 dataId, bytes32[] workers);
+    event WorkerRegistry(bytes32 indexed workerId,WorkerType workerType,address owner);
+    event SelectWorkers(bytes32 indexed dataId);
+
+
+    modifier onlyWorkerMgt() {
+        require(false, "Only workerMgt can call this function");
+        _;
+    }
 
     PADORegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
@@ -110,7 +111,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         });
         workers[operatorId] = worker;
         workerIds.push(operatorId);
-        emit WorkerRegistry(taskTypes, operatorId, quorumNumbers, socket);
+        emit WorkerRegistry(operatorId,worker.workerType,worker.owner);
         return operatorId;
     }
 
@@ -140,7 +141,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         uint32 n
     ) external returns (bool) {
         //generate a random number
-        uint256 randomness = getRandomNumber();
+        uint256 randomness = _getRandomNumber();
         require(
             workerIds.length >= n,
             "Not enough workers to provide computation"
@@ -297,7 +298,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     ) internal {}
 
     //generate a random number
-    function getRandomNumber() internal returns (uint256) {
+    function _getRandomNumber() internal returns (uint256) {
         bytes32 hash = keccak256(
             abi.encodePacked(
                 block.timestamp,

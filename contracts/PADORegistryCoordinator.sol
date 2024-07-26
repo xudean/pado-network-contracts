@@ -12,6 +12,7 @@ import {IStakeRegistry} from "@eigenlayer-middleware/src/interfaces/IStakeRegist
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IPauserRegistry} from "eigenlayer-contracts/src/contracts/interfaces/IPauserRegistry.sol";
 
 contract PADORegistryCoordinator is RegistryCoordinator {
     IWorkerMgt public workerMgt;
@@ -42,6 +43,34 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         )
     {}
 
+
+/**
+     * @param _initialOwner will hold the owner role
+     * @param _churnApprover will hold the churnApprover role, which authorizes registering with churn
+     * @param _ejector will hold the ejector role, which can force-eject operators from quorums
+     * @param _pauserRegistry a registry of addresses that can pause the contract
+     * @param _initialPausedStatus pause status after calling initialize
+     * Config for initial quorums (see `createQuorum`):
+     * @param _operatorSetParams max operator count and operator churn parameters
+     * @param _minimumStakes minimum stake weight to allow an operator to register
+     * @param _strategyParams which Strategies/multipliers a quorum considers when calculating stake weight
+     * @param _workerMgt WorkerMgt contract
+     */
+    function initialize(
+        address _initialOwner,
+        address _churnApprover,
+        address _ejector,
+        IPauserRegistry _pauserRegistry,
+        uint256 _initialPausedStatus,
+        OperatorSetParam[] memory _operatorSetParams,
+        uint96[] memory _minimumStakes,
+        IStakeRegistry.StrategyParams[][] memory _strategyParams,
+        IWorkerMgt _workerMgt
+    ) external initializer {
+        this.initialize(_initialOwner,_churnApprover,_ejector,_pauserRegistry,_initialPausedStatus,_operatorSetParams,_minimumStakes,_strategyParams);
+        workerMgt = _workerMgt;
+    }
+
     /**
      * @notice Sets the workerMgt contract address.
      * @param _workerMgt The address of the workerMgt contract.
@@ -63,7 +92,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public override onlyWorkerMgt{
+    ) public override onlyWorkerMgt onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR){
         super.registerOperator(
             quorumNumbers,
             socket,
