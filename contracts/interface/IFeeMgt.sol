@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-
+import {TaskStatus} from "./ITaskMgt.sol";
 /**
  * @notice A struct representing a fee token symbol and address.
  */
@@ -9,7 +9,13 @@ struct FeeTokenInfo {
     string symbol; // Fee token symbol.
     address tokenAddress; // Fee token address.
 }
-
+/**
+ * @notice A struct representing allowance for data user.
+ */
+struct Allowance {
+    uint256 free;
+    uint256 locked;
+}
 /**
  * @title IFeeMgt
  * @notice FeeMgt - Fee Management interface.
@@ -17,10 +23,12 @@ struct FeeTokenInfo {
 interface IFeeMgt {
     /**
      * @notice TaskMgt contract request transfer tokens.
+     * @param from The address from which transfer token.
      * @param tokenSymbol The token symbol
      * @param amount The amount of tokens to be transfered
      */
     function transferToken(
+        address from,
         string calldata tokenSymbol,
         uint256 amount
     ) payable external;
@@ -60,7 +68,7 @@ interface IFeeMgt {
      */
     function settle(
         bytes32 taskId,
-        uint8 taskResultStatus,
+        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
         uint256 computingPrice,
@@ -88,4 +96,12 @@ interface IFeeMgt {
      * @return Returns true if a token can pay fee, otherwise returns false.
      */
     function isSupportToken(string calldata tokenSymbol) external view returns (bool);
+
+    /**
+     * @notice Get allowance info.
+     * @param dataUser The address of data user
+     * @param tokenSymbol The token symbol for the data user
+     * @return Allowance for the data user
+     */
+    function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
 }
