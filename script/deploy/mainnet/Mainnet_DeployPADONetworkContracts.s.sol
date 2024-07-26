@@ -22,7 +22,8 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAV
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 // EigenLayer middleware
-import {RegistryCoordinator, IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {PADORegistryCoordinator} from "../../../contracts/PADORegistryCoordinator.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
@@ -37,8 +38,8 @@ import {OperatorStateRetriever} from "@eigenlayer-middleware/src/OperatorStateRe
 import {RewardsCoordinator} from "../../../lib/eigenlayer-middleware/lib/eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
 
 // # To deploy and verify our contract
-// forge script script/deploy/mainnet/Mainnet_DeployPADONetworkContracts.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
-contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
+// forge script script/deploy/mainnet/Holesky_DeployPADONetworkContracts.s.sol --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
+contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
     string(
         bytes(
@@ -53,7 +54,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     );
     string public outputPath =
     string.concat(
-        "script/deploy/mainnet/output/1/padonetwork_middleware_deployment_data_mainnet.json"
+        "script/deploy/mainnet/output/17000/padonetwork_middleware_deployment_data_mainnet.json"
     );
 
     ProxyAdmin public proxyAdmin;
@@ -64,14 +65,14 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     uint256 public initialPausedStatus;
 
     // Middleware contracts to deploy
-    RegistryCoordinator public registryCoordinator;
+    PADORegistryCoordinator public registryCoordinator;
     ServiceManager public serviceManager;
     BLSApkRegistry public blsApkRegistry;
     StakeRegistry public stakeRegistry;
     IndexRegistry public indexRegistry;
     OperatorStateRetriever public operatorStateRetriever;
 
-    RegistryCoordinator public registryCoordinatorImplementation;
+    PADORegistryCoordinator public registryCoordinatorImplementation;
     StakeRegistry public stakeRegistryImplementation;
     BLSApkRegistry public blsApkRegistryImplementation;
     IndexRegistry public indexRegistryImplementation;
@@ -80,7 +81,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function run()
     external
     returns (
-        RegistryCoordinator,
+        PADORegistryCoordinator,
         ServiceManager,
         StakeRegistry,
         BLSApkRegistry,
@@ -176,7 +177,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     )
     internal
     returns (
-        RegistryCoordinator,
+        PADORegistryCoordinator,
         ServiceManager,
         StakeRegistry,
         BLSApkRegistry,
@@ -202,7 +203,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        registryCoordinator = RegistryCoordinator(
+        registryCoordinator = PADORegistryCoordinator(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -293,7 +294,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             )
         );
 
-        registryCoordinatorImplementation = new RegistryCoordinator(
+        registryCoordinatorImplementation = new PADORegistryCoordinator(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
@@ -327,7 +328,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function _initRegistryCoordinator(
         ProxyAdmin _proxyAdmin,
         IRegistryCoordinator _registryCoordinator,
-        RegistryCoordinator _registryCoordinatorImplementation,
+        PADORegistryCoordinator _registryCoordinatorImplementation,
         PauserRegistry _pauserRegistry,
         string memory config_data
     ) internal {
@@ -347,7 +348,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(_registryCoordinator))),
             address(_registryCoordinatorImplementation),
             abi.encodeWithSelector(
-                RegistryCoordinator.initialize.selector,
+                PADORegistryCoordinator.initialize.selector,
                 networkOwner,
                 churner,
                 ejector,
@@ -414,7 +415,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function _verifyContractPointers(
         BLSApkRegistry _apkRegistry,
         ServiceManager _serviceManager,
-        RegistryCoordinator _registryCoordinator,
+        PADORegistryCoordinator _registryCoordinator,
         IndexRegistry _indexRegistry,
         StakeRegistry _stakeRegistry
     ) internal view {

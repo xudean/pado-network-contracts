@@ -67,7 +67,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         IStakeRegistry.StrategyParams[][] memory _strategyParams,
         IWorkerMgt _workerMgt
     ) external initializer {
-        this.initialize(_initialOwner,_churnApprover,_ejector,_pauserRegistry,_initialPausedStatus,_operatorSetParams,_minimumStakes,_strategyParams);
+        _initialize(_initialOwner,_churnApprover,_ejector,_pauserRegistry,_initialPausedStatus,_operatorSetParams,_minimumStakes,_strategyParams);
         workerMgt = _workerMgt;
     }
 
