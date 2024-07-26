@@ -173,14 +173,8 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function getMultiplePublicKeyWorkers(
         bytes32 dataId
-    ) external view returns (bytes[] memory) {
-        bytes32[] memory selectedWorkerIds = dataEncryptedByWorkers[dataId];
-        bytes[] memory selectedPublicKeys = new bytes[](selectedWorkerIds.length);
-        for (uint256 i = 0; i < selectedWorkerIds.length; i++) {
-            Worker memory worker = workers[selectedWorkerIds[i]];
-            selectedPublicKeys[i] = worker.publicKey;
-        }
-        return selectedPublicKeys;
+    ) external view returns (bytes32[] memory) {
+        return dataEncryptedByWorkers[dataId];
     }
 
     /**
@@ -199,7 +193,9 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function getTaskEncryptionPublicKey(
         bytes32 taskId
-    ) external view returns (bytes memory) {}
+    ) external view returns (bytes memory) {
+
+    }
 
     /**
      * @notice Update worker info.
@@ -228,7 +224,9 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function getWorkerById(
         bytes32 workerId
-    ) external view returns (Worker memory) {}
+    ) external view returns (Worker memory) {
+        return workers[workerId];
+    }
 
     /**
      * @notice Get worker by name.
