@@ -73,8 +73,6 @@ contract TaskMgtTest is Test {
 
     function submitTask(string memory tokenSymbol) internal {
         bytes memory consumerPk = bytes("consumerPk");
-        // vm.expectEmit(true, true, true, true);
-        emit ITaskMgt.WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
 
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
