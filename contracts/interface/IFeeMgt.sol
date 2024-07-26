@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-
+import {TaskStatus} from "./ITaskMgt.sol";
 /**
  * @notice A struct representing a fee token symbol and address.
  */
@@ -68,7 +68,7 @@ interface IFeeMgt {
      */
     function settle(
         bytes32 taskId,
-        uint8 taskResultStatus,
+        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
         uint256 computingPrice,

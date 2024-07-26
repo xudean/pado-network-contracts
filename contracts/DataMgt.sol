@@ -8,7 +8,7 @@ import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./int
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
  */
-contract DataMgt is Initializable, IDataMgt{
+contract DataMgt is IDataMgt, Initializable {
     uint256 private _registryCount;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
     bytes32[] private _dataIds;

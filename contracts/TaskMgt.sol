@@ -10,7 +10,7 @@ import {IFeeMgt} from "./interface/IFeeMgt.sol";
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
  */
-contract TaskMgt is Initializable, ITaskMgt{
+contract TaskMgt is ITaskMgt, Initializable{
     IDataMgt public _dataMgt;
     IFeeMgt public _feeMgt;
 
@@ -163,6 +163,32 @@ contract TaskMgt is Initializable, ITaskMgt{
     }
 
     /**
+     * @notice Remove pendingTaskIds and settle fee.
+     * @param taskId The id of task.
+     */
+    function onTaskCompleted(bytes32 taskId) internal {
+        Task storage task = _allTasks[taskId];
+
+        uint256 pendingIndex = find(taskId, _pendingTaskIds);
+        _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
+        _pendingTaskIds.pop();
+
+        task.status = TaskStatus.COMPLETED;
+        emit TaskCompleted(task.taskId);
+
+        _feeMgt.settle(
+            task.taskId,
+            task.status,
+            task.submitter,
+            task.tokenSymbol,
+            task.computingInfo.price,
+            getWorkerOwners(task.computingInfo.workerIds),
+            task.dataInfo.price,
+            task.dataInfo.dataProviders
+        );
+    }
+
+    /**
      * @notice Worker report the computing result.
      * @param taskId The task id to which the result is associated.
      * @param result The computing result content including zk proof.
@@ -194,12 +220,7 @@ contract TaskMgt is Initializable, ITaskMgt{
         taskIds.pop();
 
         if (waitingListLength == 0) {
-            uint256 pendingIndex = find(taskId, _pendingTaskIds);
-            _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
-            _pendingTaskIds.pop();
-
-            task.status = TaskStatus.COMPLETED;
-            emit TaskCompleted(task.taskId);
+            onTaskCompleted(taskId);
         }
 
         return true;

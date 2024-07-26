@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
+import {TaskStatus} from "./interface/ITaskMgt.sol";
 
 
 /**
@@ -95,7 +96,7 @@ contract FeeMgt is IFeeMgt, Initializable {
      */
     function settle(
         bytes32 taskId,
-        uint8 taskResultStatus,
+        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
         uint256 computingPrice,
@@ -105,7 +106,7 @@ contract FeeMgt is IFeeMgt, Initializable {
     ) external returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
         // TODO
-        if (taskResultStatus == 0) {}
+        if (taskResultStatus == TaskStatus.COMPLETED) {}
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 

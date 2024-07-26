@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {TestERC20} from "./TestERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
+import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract FeeMgtTest is Test {
@@ -174,7 +175,7 @@ contract FeeMgtTest is Test {
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         feeMgt.settle(
             info.taskId,
-            0,
+            TaskStatus.COMPLETED,
             info.submitter,
             info.tokenSymbol,
             info.computingPrice,
