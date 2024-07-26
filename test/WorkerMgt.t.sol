@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {WorkerMgt} from "../contracts/WorkerMgt.sol";
+import {PADORegistryCoordinator} from "../contracts/PADORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
@@ -14,7 +15,7 @@ contract WorkerMgtTest is Test{
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
     function setUp() public {
-        RegistryCoordinator registryCoordinator =  RegistryCoordinator(address(0));
+        PADORegistryCoordinator registryCoordinator =  PADORegistryCoordinator(address(0));
         workerMgt = new WorkerMgt();
         workerMgt.initialize(registryCoordinator);
     }

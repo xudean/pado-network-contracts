@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
 import {ComputingInfoRequest, WorkerType, Worker, WorkerStatus} from "./types/Common.sol";
@@ -7,7 +7,7 @@ import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegi
 import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {PADORegistryCoordinator} from "./PADORegistryCoordinator.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -20,7 +20,8 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string socket
     );
     event SelectWorkers(bytes32 dataId, bytes32[] workers);
-    RegistryCoordinator public registryCoordinator;
+
+    PADORegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
     mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
     bytes32[] public workerIds;
@@ -31,7 +32,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     }
 
     function initialize(
-        RegistryCoordinator _registryCoordinator
+        PADORegistryCoordinator _registryCoordinator
     ) external initializer {
         registryCoordinator = _registryCoordinator;
         __Ownable_init();
