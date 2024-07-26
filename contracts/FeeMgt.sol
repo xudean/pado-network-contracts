@@ -20,10 +20,7 @@ contract FeeMgt is IFeeMgt, Initializable {
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
 
-    address private constant MAGIC_ADDRESS_FOR_ETH = address(uint160(uint256(keccak256(bytes("ETH")))));
-    
     function initialize() public initializer {
-        _addFeeToken(string(bytes("ETH")), MAGIC_ADDRESS_FOR_ETH);
     }
 
     /**
@@ -36,7 +33,7 @@ contract FeeMgt is IFeeMgt, Initializable {
         uint256 amount
     ) payable external {
         require(isSupportToken(tokenSymbol), "not supported token");
-        if (_tokenAddressForSymbol[tokenSymbol] == MAGIC_ADDRESS_FOR_ETH) {
+        if (isETH(tokenSymbol)) {
             require(amount == msg.value, "numTokens is not correct");
         }
         else {
@@ -119,7 +116,7 @@ contract FeeMgt is IFeeMgt, Initializable {
         require(lockedAmount >= expectedAllowance, "locked not enough");
 
         if (expectedAllowance > 0) {
-            if (_tokenAddressForSymbol[tokenSymbol] == MAGIC_ADDRESS_FOR_ETH) {
+            if (isETH(tokenSymbol)) {
                 for (uint256 i = 0; i < workerOwners.length; i++) {
                     payable(workerOwners[i]).transfer(computingPrice);
                 }
@@ -191,7 +188,7 @@ contract FeeMgt is IFeeMgt, Initializable {
             tokenInfos[i] = FeeTokenInfo({
                     symbol: symbol,
                     tokenAddress: _tokenAddressForSymbol[symbol]
-                });
+            });
         }
 
         return tokenInfos;
@@ -202,6 +199,9 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @return Returns true if a token can pay fee, otherwise returns false.
      */
     function isSupportToken(string calldata tokenSymbol) public view returns (bool) {
+        if (isETH(tokenSymbol)) {
+            return true;
+        }
         return _tokenAddressForSymbol[tokenSymbol] != address(0);
     }
 
@@ -213,5 +213,14 @@ contract FeeMgt is IFeeMgt, Initializable {
      */
     function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory) {
         return _allowanceForDataUser[dataUser][tokenSymbol];
+    }
+
+    /**
+     * @notice Whether the token symbol is ETH
+     * @param tokenSymbol The token symbol
+     * @return True if the token symbol is ETH, else false
+     */
+    function isETH(string memory tokenSymbol) internal pure returns (bool) {
+        return keccak256(bytes(tokenSymbol)) == keccak256(bytes("ETH"));
     }
 }

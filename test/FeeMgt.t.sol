@@ -45,7 +45,7 @@ contract FeeMgtTest is Test {
         test_addFeeToken();
         FeeTokenInfo[] memory tokenList = feeMgt.getFeeTokens();
 
-        assertEq(tokenList.length, tokenSymbolList.length + 1);
+        assertEq(tokenList.length, tokenSymbolList.length);
 
     }
 
