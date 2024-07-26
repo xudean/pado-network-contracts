@@ -18,9 +18,10 @@ contract TaskMgt is Initializable, ITaskMgt{
     mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
 
     bytes32[] _pendingTaskIds;
-    bytes32[] _completedTaskIds;
 
     uint256 private _taskCount;
+
+    uint256 private constant COMPUTING_PRICE = 1;
     function initialize(IDataMgt dataMgt, IFeeMgt feeMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
@@ -45,6 +46,16 @@ contract TaskMgt is Initializable, ITaskMgt{
         bytes calldata code
     ) external payable returns (bytes32) {
         return bytes32(0);
+    }
+
+    function getWorkerOwners(bytes32[] memory workerIds) internal pure returns (address[] memory) {
+        uint256 workerIdLength = workerIds.length;
+
+        address[] memory workerOwners = new address[](workerIdLength);
+        for (uint256 i = 0; i < workerIdLength; i++) {
+            workerOwners[i] = address(uint160(uint256(keccak256(abi.encode(workerIds)))));
+        }
+        return workerOwners;
     }
 
     /**
@@ -72,6 +83,11 @@ contract TaskMgt is Initializable, ITaskMgt{
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, _taskCount));
         _taskCount++;
+
+        address[] memory dataProviders = new address[](1);
+        dataProviders[0] = dataInfo.owner;
+
+        address[] memory workerOwners = getWorkerOwners(dataInfo.workerIds);
 
         Task memory task = Task({
             taskId: taskId,
@@ -106,6 +122,15 @@ contract TaskMgt is Initializable, ITaskMgt{
             _taskIdForWorker[workerIds[i]].push(taskId);
             emit WorkerReceiveTask(workerIds[i], taskId);
         }
+        _feeMgt.lock(
+            taskId,
+            tx.origin,
+            priceInfo.tokenSymbol,
+            COMPUTING_PRICE,
+            workerOwners,
+            priceInfo.price,
+            dataProviders
+        );
 
         return taskId;
     }
@@ -173,8 +198,6 @@ contract TaskMgt is Initializable, ITaskMgt{
             _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
             _pendingTaskIds.pop();
 
-            _completedTaskIds.push(taskId);
-
             task.status = TaskStatus.COMPLETED;
             emit TaskCompleted(task.taskId);
         }
@@ -214,19 +237,6 @@ contract TaskMgt is Initializable, ITaskMgt{
         return tasks;
     }
 
-    /**
-     * @notice Get completed tasks.
-     * @return Returns an array of completed tasks.
-     */
-    function getCompletedTasks() external view returns (Task[] memory) {
-        uint256 completedTaskCount = _completedTaskIds.length;
-        Task[] memory tasks = new Task[](completedTaskCount);
-
-        for (uint256 i = 0; i < completedTaskCount; i++) {
-            tasks[i] = _allTasks[_completedTaskIds[i]];
-        }
-        return tasks;
-    }
     
     /**
      * @notice Get a completed task.

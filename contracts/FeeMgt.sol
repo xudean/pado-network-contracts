@@ -40,10 +40,10 @@ contract FeeMgt is IFeeMgt, Initializable {
             require(_tokenAddressForSymbol[tokenSymbol] != address(0), "tokenSymbol is not supported");
             
             address tokenAddress = _tokenAddressForSymbol[tokenSymbol];
-            IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+            IERC20(tokenAddress).transferFrom(tx.origin, address(this), amount);
         }
 
-        Allowance storage allowance = _allowanceForDataUser[msg.sender][tokenSymbol];
+        Allowance storage allowance = _allowanceForDataUser[tx.origin][tokenSymbol];
 
         allowance.free += amount;
     }
