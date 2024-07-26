@@ -2,12 +2,9 @@
 
 pragma solidity ^0.8.20;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {DataMgt, DataInfo} from "../contracts/DataMgt.sol";
 import {EncryptionSchema, PriceInfo, DataStatus} from "../contracts/interface/IDataMgt.sol";
-import "forge-std/console.sol";
-import "forge-std/Vm.sol";
-
 
 contract DataMgtTest is Test {
     DataMgt public dataMgt;
