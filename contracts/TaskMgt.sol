@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo} from "./interface/ITaskMgt.sol";
 import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";

@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
 
 
