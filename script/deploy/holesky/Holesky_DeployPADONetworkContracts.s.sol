@@ -22,7 +22,8 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAV
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
 // EigenLayer middleware
-import {RegistryCoordinator, IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {PADORegistryCoordinator} from "../../../contracts/PADORegistryCoordinator.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
@@ -64,14 +65,14 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     uint256 public initialPausedStatus;
 
     // Middleware contracts to deploy
-    RegistryCoordinator public registryCoordinator;
+    PADORegistryCoordinator public registryCoordinator;
     ServiceManager public serviceManager;
     BLSApkRegistry public blsApkRegistry;
     StakeRegistry public stakeRegistry;
     IndexRegistry public indexRegistry;
     OperatorStateRetriever public operatorStateRetriever;
 
-    RegistryCoordinator public registryCoordinatorImplementation;
+    PADORegistryCoordinator public registryCoordinatorImplementation;
     StakeRegistry public stakeRegistryImplementation;
     BLSApkRegistry public blsApkRegistryImplementation;
     IndexRegistry public indexRegistryImplementation;
@@ -80,7 +81,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function run()
     external
     returns (
-        RegistryCoordinator,
+        PADORegistryCoordinator,
         ServiceManager,
         StakeRegistry,
         BLSApkRegistry,
@@ -176,7 +177,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     )
     internal
     returns (
-        RegistryCoordinator,
+        PADORegistryCoordinator,
         ServiceManager,
         StakeRegistry,
         BLSApkRegistry,
@@ -202,7 +203,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        registryCoordinator = RegistryCoordinator(
+        registryCoordinator = PADORegistryCoordinator(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -293,7 +294,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             )
         );
 
-        registryCoordinatorImplementation = new RegistryCoordinator(
+        registryCoordinatorImplementation = new PADORegistryCoordinator(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,
@@ -327,7 +328,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function _initRegistryCoordinator(
         ProxyAdmin _proxyAdmin,
         IRegistryCoordinator _registryCoordinator,
-        RegistryCoordinator _registryCoordinatorImplementation,
+        PADORegistryCoordinator _registryCoordinatorImplementation,
         PauserRegistry _pauserRegistry,
         string memory config_data
     ) internal {
@@ -347,7 +348,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             TransparentUpgradeableProxy(payable(address(_registryCoordinator))),
             address(_registryCoordinatorImplementation),
             abi.encodeWithSelector(
-                RegistryCoordinator.initialize.selector,
+                PADORegistryCoordinator.initialize.selector,
                 networkOwner,
                 churner,
                 ejector,
@@ -414,7 +415,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     function _verifyContractPointers(
         BLSApkRegistry _apkRegistry,
         ServiceManager _serviceManager,
-        RegistryCoordinator _registryCoordinator,
+        PADORegistryCoordinator _registryCoordinator,
         IndexRegistry _indexRegistry,
         StakeRegistry _stakeRegistry
     ) internal view {
