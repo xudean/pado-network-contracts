@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import { ComputingInfoRequest } from "../Common.sol";
+import { ComputingInfoRequest } from "../types/Common.sol";
 
 /**
  * @notice A enum representing all task status.

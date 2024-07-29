@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
-import {TestERC20} from "./TestERC20.sol";
+import {TestERC20} from "./mock/TestERC20.sol";
 import {TaskMgt} from "../contracts/TaskMgt.sol";
 import {ITaskMgt, TaskStatus, Task} from "../contracts/interface/ITaskMgt.sol";
 import {IDataMgt} from "../contracts/interface/IDataMgt.sol";

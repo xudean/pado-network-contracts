@@ -11,7 +11,6 @@ import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./int
 contract DataMgt is IDataMgt, Initializable {
     uint256 private _registryCount;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
-    bytes32[] private _dataIds;
 
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
     
@@ -54,7 +53,6 @@ contract DataMgt is IDataMgt, Initializable {
                 status: DataStatus.REGISTERING
             });
         _dataInfos[dataId] = dataInfo;
-        _dataIds.push(dataId);
         _dataIdListPerOwner[msg.sender].push(dataId);
 
         emit PrepareRegistry(dataId, publicKeys);
@@ -87,22 +85,6 @@ contract DataMgt is IDataMgt, Initializable {
         return dataId;
     }
     
-
-    /**
-     * @notice Get all data registered by Data Provider
-     * @return return all data
-     */
-    function getAllData(
-    ) external view returns (DataInfo[] memory) {
-        uint256 dataIdLength = _dataIds.length;
-
-        DataInfo[] memory dataInfoList = new DataInfo[](dataIdLength);
-        for (uint256 i = 0; i < dataIdLength; i++) {
-            dataInfoList[i] = _dataInfos[_dataIds[i]];
-        }
-
-        return dataInfoList;
-    }
 
     /**
      * @notice Get data by owner
