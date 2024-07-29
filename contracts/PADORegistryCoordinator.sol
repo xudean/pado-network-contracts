@@ -18,7 +18,10 @@ contract PADORegistryCoordinator is RegistryCoordinator {
     IWorkerMgt public workerMgt;
 
     modifier onlyWorkerMgt() {
-        require(msg.sender == address(workerMgt), "Only workerMgt can call this function");
+        require(
+            msg.sender == address(workerMgt),
+            "Only workerMgt can call this function"
+        );
         _;
     }
 
@@ -43,8 +46,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         )
     {}
 
-
-/**
+    /**
      * @param _initialOwner will hold the owner role
      * @param _churnApprover will hold the churnApprover role, which authorizes registering with churn
      * @param _ejector will hold the ejector role, which can force-eject operators from quorums
@@ -67,7 +69,16 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         IStakeRegistry.StrategyParams[][] memory _strategyParams,
         IWorkerMgt _workerMgt
     ) external initializer {
-        _initialize(_initialOwner,_churnApprover,_ejector,_pauserRegistry,_initialPausedStatus,_operatorSetParams,_minimumStakes,_strategyParams);
+        _initialize(
+            _initialOwner,
+            _churnApprover,
+            _ejector,
+            _pauserRegistry,
+            _initialPausedStatus,
+            _operatorSetParams,
+            _minimumStakes,
+            _strategyParams
+        );
         workerMgt = _workerMgt;
     }
 
@@ -78,7 +89,6 @@ contract PADORegistryCoordinator is RegistryCoordinator {
     function setWorkerMgt(IWorkerMgt _workerMgt) external onlyOwner {
         workerMgt = _workerMgt;
     }
-
 
     /**
      * @notice Registers a worker with the registry coordinator.
@@ -92,7 +102,12 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public override onlyWorkerMgt onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR){
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
+    {
         super.registerOperator(
             quorumNumbers,
             socket,

@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.20;
 
-import {ComputingInfoRequest,Worker} from "../types/Common.sol";
+import {ComputingInfoRequest, Worker} from "../types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-
-
 
 /**
  * @title IWorkerMgt
@@ -69,29 +67,35 @@ interface IWorkerMgt {
         uint32 n
     ) external returns (bool);
 
-/**
- * @notice Get wokers whose public keys will be used to encrypt data.
+    /**
+     * @notice Get wokers whose public keys will be used to encrypt data.
      * @param dataId The data id.
      * @return Returns the array of worker id.
      */
-    function getMultiplePublicKeyWorkers(bytes32 dataId) external view returns (bytes32[] memory);
+    function getMultiplePublicKeyWorkers(
+        bytes32 dataId
+    ) external view returns (bytes32[] memory);
 
-/**
- * @notice Get workers which will run the task.
+    /**
+     * @notice Get workers which will run the task.
      * @param taskId The task id.
      * @return Returns the array of worker id.
      */
-    function getTaskWorkers(bytes32 taskId) external view returns (bytes32[] memory);
+    function getTaskWorkers(
+        bytes32 taskId
+    ) external view returns (bytes32[] memory);
 
-/**
- * @notice Get data encryption public key of the task.
+    /**
+     * @notice Get data encryption public key of the task.
      * @param taskId The task id.
      * @return Returns data encryption public key.
      */
-    function getTaskEncryptionPublicKey(bytes32 taskId) external view returns (bytes memory);
+    function getTaskEncryptionPublicKey(
+        bytes32 taskId
+    ) external view returns (bytes memory);
 
-/**
- * @notice Update worker info.
+    /**
+     * @notice Update worker info.
      * @param name The worker name, name can't be updated.
      * @param desc The new value of description you want to modify, empty value means no modification is required.
      * @param taskTypes The new value of taskTypes, the array length 0 means no modification is required.
@@ -103,59 +107,70 @@ interface IWorkerMgt {
         uint32[] calldata taskTypes
     ) external returns (bool);
 
-/**
- * @notice Delete worker from network.
+    /**
+     * @notice Delete worker from network.
      * @param name The name of the worker to be deleted.
      * @return Returns true if the deleting is successful.
      */
     function deleteWorker(string calldata name) external returns (bool);
 
-/**
- * @notice Get worker by id.
+    /**
+     * @notice Get worker by id.
      * @param workerId The worker id.
      * @return Returns the worker.
      */
-    function getWorkerById(bytes32 workerId) external view returns (Worker memory);
+    function getWorkerById(
+        bytes32 workerId
+    ) external view returns (Worker memory);
 
-/**
- * @notice Get worker by name.
+    /**
+     * @notice Get worker by name.
      * @param workerName The worker name.
      * @return Returns the worker.
      */
-    function getWorkerByName(string calldata workerName) external view returns (Worker memory);
+    function getWorkerByName(
+        string calldata workerName
+    ) external view returns (Worker memory);
 
-/**
- * @notice Get all workers.
+    /**
+     * @notice Get all workers.
      * @return Returns all workers.
      */
     function getWorkers() external view returns (Worker[] memory);
 
-/**
- * @notice User delegate some token to a worker.
+    /**
+     * @notice User delegate some token to a worker.
      * @param workerId The worker id to delegate.
      * @param delegateAmount The delegate amount.
      * @return Returns true if the delegating is successful.
      */
-    function delegate(bytes32 workerId, uint256 delegateAmount) external payable returns (bool);
+    function delegate(
+        bytes32 workerId,
+        uint256 delegateAmount
+    ) external payable returns (bool);
 
-/**
- * @notice User cancel delegating to a worker.
+    /**
+     * @notice User cancel delegating to a worker.
      * @param workerId The worker id to cancel delegating.
      * @return Returns true if the canceling is successful.
      */
     function unDelegate(bytes32 workerId) external returns (bool);
 
-/**
- * @notice Get Workers by delegator address.
+    /**
+     * @notice Get Workers by delegator address.
      * @param delegator The delegator address.
      * @return Returns all workers id of the user delegating.
      */
-    function getWorkersByDelegator(address delegator) external view returns (bytes32[] memory);
+    function getWorkersByDelegator(
+        address delegator
+    ) external view returns (bytes32[] memory);
 
-/**
- * @notice Get delegators by worker id.
+    /**
+     * @notice Get delegators by worker id.
      * @param workerId The worker id.
      * @return Returns all delegators address of the worker having.
      */
-    function getDelegatorsByWorker(bytes32 workerId) external view returns (address[] memory);
+    function getDelegatorsByWorker(
+        bytes32 workerId
+    ) external view returns (address[] memory);
 }
