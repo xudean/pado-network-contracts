@@ -18,7 +18,10 @@ contract PADORegistryCoordinator is RegistryCoordinator {
     IWorkerMgt public workerMgt;
 
     modifier onlyWorkerMgt() {
-        require(msg.sender == address(workerMgt), "Only workerMgt can call this function");
+        require(
+            msg.sender == address(workerMgt),
+            "Only workerMgt can call this function"
+        );
         _;
     }
 
@@ -43,8 +46,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         )
     {}
 
-
-/**
+    /**
      * @param _initialOwner will hold the owner role
      * @param _churnApprover will hold the churnApprover role, which authorizes registering with churn
      * @param _ejector will hold the ejector role, which can force-eject operators from quorums
@@ -67,7 +69,16 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         IStakeRegistry.StrategyParams[][] memory _strategyParams,
         IWorkerMgt _workerMgt
     ) external initializer {
-        _initialize(_initialOwner,_churnApprover,_ejector,_pauserRegistry,_initialPausedStatus,_operatorSetParams,_minimumStakes,_strategyParams);
+        __RegistryCoordinator_init(
+            _initialOwner,
+            _churnApprover,
+            _ejector,
+            _pauserRegistry,
+            _initialPausedStatus,
+            _operatorSetParams,
+            _minimumStakes,
+            _strategyParams
+        );
         workerMgt = _workerMgt;
     }
 
@@ -78,7 +89,6 @@ contract PADORegistryCoordinator is RegistryCoordinator {
     function setWorkerMgt(IWorkerMgt _workerMgt) external onlyOwner {
         workerMgt = _workerMgt;
     }
-
 
     /**
      * @notice Registers a worker with the registry coordinator.
@@ -92,11 +102,51 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public override onlyWorkerMgt onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR){
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
+    {
         super.registerOperator(
             quorumNumbers,
             socket,
             params,
+            operatorSignature
+        );
+    }
+
+    /**
+     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
+     * capacity, `operatorKickParams` is used to replace an old operator with the new one.
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param operatorKickParams used to determine which operator is removed to maintain quorum capacity as the
+     * operator registers for quorums
+     * @param churnApproverSignature is the signature of the churnApprover over the `operatorKickParams`
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
+     * @dev `params` is ignored if the caller has previously registered a public key
+     * @dev `operatorSignature` is ignored if the operator's status is already REGISTERED
+     */
+    function registerOperatorWithChurn(
+        bytes calldata quorumNumbers,
+        string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        OperatorKickParam[] calldata operatorKickParams,
+        SignatureWithSaltAndExpiry memory churnApproverSignature,
+        SignatureWithSaltAndExpiry memory operatorSignature
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
+    {
+        super.registerOperatorWithChurn(
+            quorumNumbers,
+            socket,
+            params,
+            operatorKickParams,
+            churnApproverSignature,
             operatorSignature
         );
     }

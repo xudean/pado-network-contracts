@@ -13,21 +13,22 @@ import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSD
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
-
-
-contract ServiceManager is ServiceManagerBase{
-
+contract ServiceManager is ServiceManagerBase {
     constructor(
         IAVSDirectory __avsDirectory,
         IRewardsCoordinator __rewardsCoordinator,
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
-    ) ServiceManagerBase(__avsDirectory,__rewardsCoordinator,__registryCoordinator,__stakeRegistry){
-        
-    }
+    )
+    ServiceManagerBase(
+    __avsDirectory,
+    __rewardsCoordinator,
+    __registryCoordinator,
+    __stakeRegistry
+    )
+    {}
 
     function initialize(address initialOwner) public virtual initializer {
-        _transferOwnership(initialOwner);
-        _setRewardsInitiator(initialOwner);
+        __ServiceManagerBase_init(initialOwner,initialOwner);
     }
 }

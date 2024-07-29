@@ -29,10 +29,12 @@ struct Worker {
     uint256 delegationAmount; // The delegation amount of the worker.
 }
 
-enum WorkerType{
-    EIGENLAYER, NATIVE
+enum WorkerType {
+    EIGENLAYER,
+    NATIVE
 }
 
-enum WorkerStatus{
-    REGISTERED,UNREGISTERED
+enum WorkerStatus {
+    REGISTERED,
+    UNREGISTERED
 }
