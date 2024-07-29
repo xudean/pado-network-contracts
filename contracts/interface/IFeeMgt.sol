@@ -8,6 +8,7 @@ import {TaskStatus} from "./ITaskMgt.sol";
 struct FeeTokenInfo {
     string symbol; // Fee token symbol.
     address tokenAddress; // Fee token address.
+    uint256 computingPrice; // computing price.
 }
 /**
  * @notice A struct representing allowance for data user.
@@ -38,7 +39,6 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
      * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
@@ -48,7 +48,6 @@ interface IFeeMgt {
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        uint256 computingPrice,
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
@@ -60,7 +59,6 @@ interface IFeeMgt {
      * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
      * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
@@ -71,7 +69,6 @@ interface IFeeMgt {
         TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
-        uint256 computingPrice,
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
@@ -81,15 +78,23 @@ interface IFeeMgt {
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
      * @param tokenAddress The new fee token address.
+     * @param computingPrice The computing price for the token.
      * @return Returns true if the adding is successful.
      */
-    function addFeeToken(string calldata tokenSymbol, address tokenAddress) external returns (bool);
+    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool);
 
     /**
      * @notice Get the all fee tokens.
      * @return Returns the all fee tokens info.
      */
     function getFeeTokens() external view returns (FeeTokenInfo[] memory);
+
+    /**
+     * @notice Get fee token by token symbol.
+     * @param tokenSymbol The token symbol.
+     * @return Returns the fee token.
+     */
+    function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory);
 
     /**
      * @notice Determine whether a token can pay the handling fee.

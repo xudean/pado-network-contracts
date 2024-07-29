@@ -29,11 +29,11 @@ contract TaskMgtTest is Test, ITaskMgtEvents {
         dataMgt = datamgt;
 
         FeeMgt feemgt = new FeeMgt();
-        feemgt.initialize();
+        feemgt.initialize(1);
         TestERC20 bETH = new TestERC20();
         bETH.initialize("TEST ETH", "bETH", 18);
         erc20 = bETH;
-        feemgt.addFeeToken("bETH", address(bETH));
+        feemgt.addFeeToken("bETH", address(bETH), 1);
         feeMgt = feemgt;
         
         mgt.initialize(dataMgt, feeMgt);
