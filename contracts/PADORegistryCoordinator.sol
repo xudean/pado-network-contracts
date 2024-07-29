@@ -115,4 +115,39 @@ contract PADORegistryCoordinator is RegistryCoordinator {
             operatorSignature
         );
     }
+
+    /**
+     * @notice Registers msg.sender as an operator for one or more quorums. If any quorum reaches its maximum operator
+     * capacity, `operatorKickParams` is used to replace an old operator with the new one.
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being registered for
+     * @param params contains the G1 & G2 public keys of the operator, and a signature proving their ownership
+     * @param operatorKickParams used to determine which operator is removed to maintain quorum capacity as the
+     * operator registers for quorums
+     * @param churnApproverSignature is the signature of the churnApprover over the `operatorKickParams`
+     * @param operatorSignature is the signature of the operator used by the AVS to register the operator in the delegation manager
+     * @dev `params` is ignored if the caller has previously registered a public key
+     * @dev `operatorSignature` is ignored if the operator's status is already REGISTERED
+     */
+    function registerOperatorWithChurn(
+        bytes calldata quorumNumbers,
+        string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        OperatorKickParam[] calldata operatorKickParams,
+        SignatureWithSaltAndExpiry memory churnApproverSignature,
+        SignatureWithSaltAndExpiry memory operatorSignature
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
+    {
+        super.registerOperatorWithChurn(
+            quorumNumbers,
+            socket,
+            params,
+            operatorKickParams,
+            churnApproverSignature,
+            operatorSignature
+        );
+    }
 }
