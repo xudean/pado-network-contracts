@@ -73,7 +73,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external onlyWhiteListedWorker(msg.sender) returns (bytes32) {
+    ) external /*onlyWhiteListedWorker(msg.sender)*/ returns (bytes32) {
         _checkWorkerParam(
             taskTypes,
             publicKey,
