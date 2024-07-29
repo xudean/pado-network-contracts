@@ -20,16 +20,15 @@ contract ServiceManager is ServiceManagerBase {
         IRegistryCoordinator __registryCoordinator,
         IStakeRegistry __stakeRegistry
     )
-        ServiceManagerBase(
-            __avsDirectory,
-            __rewardsCoordinator,
-            __registryCoordinator,
-            __stakeRegistry
-        )
+    ServiceManagerBase(
+    __avsDirectory,
+    __rewardsCoordinator,
+    __registryCoordinator,
+    __stakeRegistry
+    )
     {}
 
     function initialize(address initialOwner) public virtual initializer {
-        _transferOwnership(initialOwner);
-        _setRewardsInitiator(initialOwner);
+        __ServiceManagerBase_init(initialOwner,initialOwner);
     }
 }
