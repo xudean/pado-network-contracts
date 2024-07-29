@@ -10,35 +10,38 @@ import {Test, console} from "forge-std/Test.sol";
 import "./mock/WorkerSelectMock.t.sol";
 
 contract WorkerMgtTest is Test {
-    bytes internal constant DIGITS = "0123456789";
     WorkerMgt public workerMgt;
     WorkerSelectMock workerSelectMock;
     uint[] privKeys;
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
     function setUp() public {
-        PADORegistryCoordinator registryCoordinator = PADORegistryCoordinator(address(0));
+        PADORegistryCoordinator registryCoordinator = PADORegistryCoordinator(
+            address(0)
+        );
         workerMgt = new WorkerMgt();
         workerMgt.initialize(registryCoordinator);
         workerSelectMock = new WorkerSelectMock();
         for (uint32 i = 0; i < 100; i++) {
             workerSelectMock.addWorker(i);
         }
-
     }
 
     function testSelectWorker() public {
         for (uint32 i; i < 10; i++) {
-            uint32[] memory workers = workerSelectMock.selectMultiplePublicKeyWorkers(keccak256(abi.encode(msg.sender)), 5);
+            uint32[] memory workers = workerSelectMock
+                .selectMultiplePublicKeyWorkers(
+                    keccak256(abi.encode(msg.sender)),
+                    5
+                );
             string memory workersStr = uint32ArrayToString(workers);
             console.log("select workers:", workersStr);
             assert(workers.length == 5);
             console.log("-------------------------------------------");
-
         }
     }
 
-    //-----helper-----
+    //======================helper========================
     function uintToString(uint32 _i) public pure returns (string memory) {
         if (_i == 0) {
             return "0";
@@ -54,13 +57,15 @@ contract WorkerMgtTest is Test {
         temp = _i;
         while (temp != 0) {
             index -= 1;
-            buffer[index] = bytes1(uint8(48 + temp % 10));
+            buffer[index] = bytes1(uint8(48 + (temp % 10)));
             temp /= 10;
         }
         return string(buffer);
     }
 
-    function uint32ArrayToString(uint32[] memory _uint32Array) public pure returns (string memory) {
+    function uint32ArrayToString(
+        uint32[] memory _uint32Array
+    ) public pure returns (string memory) {
         bytes memory result;
         for (uint256 i = 0; i < _uint32Array.length; i++) {
             result = abi.encodePacked(result, uintToString(_uint32Array[i]));
@@ -70,6 +75,4 @@ contract WorkerMgtTest is Test {
         }
         return string(result);
     }
-
 }
-

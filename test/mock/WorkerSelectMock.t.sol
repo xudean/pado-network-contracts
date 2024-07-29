@@ -13,7 +13,7 @@ contract WorkerSelectMock {
     function selectMultiplePublicKeyWorkers(
         bytes32 dataId,
         uint32 n
-    ) external returns  (uint32[] memory) {
+    ) external returns (uint32[] memory) {
         //generate a random number
         uint256 randomness = _getRandomNumber();
         require(
@@ -43,9 +43,9 @@ contract WorkerSelectMock {
 
     //generate a random number
     function _getRandomNumber() internal returns (uint256) {
-        console.log("block.timestamp:%s",block.timestamp);
-        console.log("msg.sender:%s",msg.sender);
-        console.log("nonce:%d",addressNonce[msg.sender]);
+        console.log("block.timestamp:%s", block.timestamp);
+        console.log("msg.sender:%s", msg.sender);
+        console.log("nonce:%d", addressNonce[msg.sender]);
         bytes32 hash = keccak256(
             abi.encodePacked(
                 block.timestamp,

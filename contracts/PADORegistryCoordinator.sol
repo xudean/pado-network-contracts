@@ -69,7 +69,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         IStakeRegistry.StrategyParams[][] memory _strategyParams,
         IWorkerMgt _workerMgt
     ) external initializer {
-        _initialize(
+        __RegistryCoordinator_init(
             _initialOwner,
             _churnApprover,
             _ejector,
