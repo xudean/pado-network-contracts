@@ -173,4 +173,16 @@ interface IWorkerMgt {
     function getDelegatorsByWorker(
         bytes32 workerId
     ) external view returns (address[] memory);
+
+    /**
+     * @notice Add white list item.
+     * @param _address The address to add.
+     */
+    function addWhiteListItem(address _address) external;
+
+    /**
+     * @notice Remove white list item.
+     * @param _address The address to remove.
+     */
+    function removeWhiteListItem(address _address) external;
 }

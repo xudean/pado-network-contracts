@@ -24,6 +24,15 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     mapping(bytes32 => bytes32[]) public workersToEncryptData;
     bytes32[] public workerIds;
     mapping(address => uint32) addressNonce;
+    mapping(address => bool) public workerWhiteList;
+
+    modifier onlyWhiteListedWorker(address worker) {
+        require(
+            workerWhiteList[worker],
+            "workerWhiteList: worker not in whitelist"
+        );
+        _;
+    }
 
     constructor() {
         _disableInitializers();
@@ -64,7 +73,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external returns (bytes32) {
+    ) external onlyWhiteListedWorker(msg.sender) returns (bytes32) {
         _checkWorkerParam(
             taskTypes,
             publicKey,
@@ -73,6 +82,9 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             params,
             operatorSignature
         );
+        if (address(registryCoordinator) == address(0)) {
+            revert("registryCoordinator not set!");
+        }
         //result is operatorId,check whether operator has registried to eigenlayer.operatorId is same as workerId
         bytes32 operatorId = registryCoordinator.getOperatorId(msg.sender);
 
@@ -137,30 +149,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         uint32 t,
         uint32 n
     ) external returns (bool) {
-        //generate a random number
-        uint256 randomness = _getRandomNumber();
-        require(
-            workerIds.length >= n,
-            "Not enough workers to provide computation"
-        );
-
-        uint256[] memory indices = new uint256[](workerIds.length);
-        for (uint256 i = 0; i < workerIds.length; i++) {
-            indices[i] = i;
-        }
-
-        // Fisher-Yates shuffle algorithm
-        for (uint256 i = 0; i < n; i++) {
-            uint256 j = i + (randomness % (workerIds.length - i));
-            (indices[i], indices[j]) = (indices[j], indices[i]);
-            randomness = uint256(keccak256(abi.encodePacked(randomness, i)));
-        }
-
-        // Select the first n indices
-        for (uint256 i = 0; i < n; i++) {
-            //save workerId
-            workersToEncryptData[dataId].push(workerIds[indices[i]]);
-        }
+        workersToEncryptData[dataId] = _selectWorkers(n);
         return true;
     }
 
@@ -237,7 +226,13 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      * @notice Get all workers.
      * @return Returns all workers.
      */
-    function getWorkers() external view returns (Worker[] memory) {}
+    function getWorkers() external view returns (Worker[] memory) {
+        Worker[] memory _workers = new Worker[](workerIds.length);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            _workers[i] = workers[workerIds[i]];
+        }
+        return _workers;
+    }
 
     /**
      * @notice User delegate some token to a worker.
@@ -275,7 +270,28 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes32 workerId
     ) external view returns (address[] memory) {}
 
+    /**
+     * @notice Add white list item.
+     * @param _address The address to add.
+     */
+    function addWhiteListItem(address _address) external onlyOwner {
+        workerWhiteList[_address] = true;
+    }
+
+    /**
+     * @notice Remove white list item.
+     * @param _address The address to remove.
+     */
+    function removeWhiteListItem(address _address) external onlyOwner {
+        workerWhiteList[_address] = false;
+    }
+
     //==============================helper function======================
+    /**
+     * @notice Check whether the worker is registered.
+     * @param _workerId The worker id.
+     * @return Returns true if the worker is registered.
+     */
     function checkWorkerRegistered(
         bytes32 _workerId
     ) public view returns (bool) {
@@ -283,6 +299,15 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     }
 
     //==============================internal function====================
+    /**
+     * @notice Check whether the worker parameters are valid.
+     * @param taskTypes The task types.
+     * @param publicKey The public key.
+     * @param quorumNumbers The quorum numbers.
+     * @param socket The socket.
+     * @param params The public key registration params.
+     * @param operatorSignature The operator signature.
+     */
     function _checkWorkerParam(
         uint32[] calldata taskTypes,
         bytes[] calldata publicKey,
@@ -292,7 +317,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) internal {}
 
-    //generate a random number
+    /**
+     * @notice Get a random number.
+     * @return Returns a random number.
+     */
     function _getRandomNumber() internal returns (uint256) {
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -304,5 +332,39 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         //This operation consumes some gas but guarantees the quality of the random numbers generated.
         addressNonce[msg.sender] = addressNonce[msg.sender] + 1;
         return uint256(hash);
+    }
+
+    /**
+     * @notice Select workers randomly.
+     * @param n The number of workers to select.
+     * @return Returns the selected workers.
+     */
+    function _selectWorkers(uint256 n) internal returns (bytes32[] memory) {
+        require(
+            workerIds.length >= n,
+            "Not enough workers to provide computation"
+        );
+
+        //generate a random number
+        uint256 randomness = _getRandomNumber();
+
+        uint256[] memory indices = new uint256[](workerIds.length);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            indices[i] = i;
+        }
+
+        // Fisher-Yates shuffle algorithm
+        for (uint256 i = 0; i < n; i++) {
+            uint256 j = i + (randomness % (workerIds.length - i));
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+            randomness = uint256(keccak256(abi.encodePacked(randomness, i)));
+        }
+        bytes32[] memory selectedWorkers = new bytes32[](n);
+        // Select the first n indices
+        for (uint256 i = 0; i < n; i++) {
+            //save workerId
+            selectedWorkers[i] = workerIds[indices[i]];
+        }
+        return selectedWorkers;
     }
 }
