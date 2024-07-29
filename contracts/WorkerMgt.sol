@@ -21,12 +21,12 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
 
     PADORegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
-    mapping(bytes32 => bytes32[]) public dataEncryptedByWorkers;
+    mapping(bytes32 => bytes32[]) public workersToEncryptData;
     bytes32[] public workerIds;
     mapping(address => uint32) addressNonce;
 
     constructor() {
-        //        _disableInitializers();
+        _disableInitializers();
     }
 
     function initialize(
@@ -159,7 +159,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         // Select the first n indices
         for (uint256 i = 0; i < n; i++) {
             //save workerId
-            dataEncryptedByWorkers[dataId].push(workerIds[indices[i]]);
+            workersToEncryptData[dataId].push(workerIds[indices[i]]);
         }
         return true;
     }
@@ -172,7 +172,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     function getMultiplePublicKeyWorkers(
         bytes32 dataId
     ) external view returns (bytes32[] memory) {
-        return dataEncryptedByWorkers[dataId];
+        return workersToEncryptData[dataId];
     }
 
     /**
