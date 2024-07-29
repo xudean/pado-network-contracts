@@ -168,6 +168,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      */
     function _onTaskCompleted(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
+        DataInfo memory dataInfo = _dataMgt.getDataById(task.dataId);
 
         uint256 pendingIndex = _find(taskId, _pendingTaskIds);
         _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
@@ -176,6 +177,9 @@ contract TaskMgt is ITaskMgt, Initializable{
         task.status = TaskStatus.COMPLETED;
         emit TaskCompleted(task.taskId);
 
+        address[] memory dataProviders = new address[](1);
+        dataProviders[0] = dataInfo.owner;
+
         _feeMgt.settle(
             task.taskId,
             task.status,
@@ -183,8 +187,8 @@ contract TaskMgt is ITaskMgt, Initializable{
             task.tokenSymbol,
             task.computingInfo.price,
             getWorkerOwners(task.computingInfo.workerIds),
-            task.dataInfo.price,
-            task.dataInfo.dataProviders
+            dataInfo.priceInfo.price,
+            dataProviders
         );
     }
 

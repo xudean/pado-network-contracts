@@ -9,9 +9,10 @@ import {ITaskMgt, TaskStatus, Task} from "../contracts/interface/ITaskMgt.sol";
 import {IDataMgt} from "../contracts/interface/IDataMgt.sol";
 import {IFeeMgt, Allowance} from "../contracts/interface/IFeeMgt.sol";
 import {EncryptionSchema, PriceInfo, DataMgt} from "../contracts/DataMgt.sol";
+import {ITaskMgtEvents} from "./events/ITaskMgtEvents.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 
-contract TaskMgtTest is Test {
+contract TaskMgtTest is Test, ITaskMgtEvents {
     ITaskMgt taskMgt;
     IDataMgt dataMgt;
     IFeeMgt feeMgt;
@@ -74,7 +75,7 @@ contract TaskMgtTest is Test {
     function submitTask(string memory tokenSymbol) internal {
         bytes memory consumerPk = bytes("consumerPk");
         // vm.expectEmit(true, true, true, true);
-        emit ITaskMgt.WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
+        emit WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
 
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
