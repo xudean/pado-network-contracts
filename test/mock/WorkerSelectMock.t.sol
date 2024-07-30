@@ -10,16 +10,20 @@ contract WorkerSelectMock {
         workerIds.push(workerId);
     }
 
-    function selectMultiplePublicKeyWorkers(
-        bytes32 dataId,
-        uint32 n
-    ) external returns (uint32[] memory) {
-        //generate a random number
-        uint256 randomness = _getRandomNumber();
+
+    /**
+     * @notice Select workers randomly.
+     * @param n The number of workers to select.
+     * @return Returns the selected workers.
+     */
+    function selectWorkers(uint256 n) public returns (uint32[] memory) {
         require(
             workerIds.length >= n,
             "Not enough workers to provide computation"
         );
+
+        //generate a random number
+        uint256 randomness = _getRandomNumber();
 
         uint256[] memory indices = new uint256[](workerIds.length);
         for (uint256 i = 0; i < workerIds.length; i++) {
@@ -32,13 +36,13 @@ contract WorkerSelectMock {
             (indices[i], indices[j]) = (indices[j], indices[i]);
             randomness = uint256(keccak256(abi.encodePacked(randomness, i)));
         }
-        uint32[] memory selectedDataIds = new uint32[](n);
+        uint32[] memory selectedWorkers = new uint32[](n);
         // Select the first n indices
         for (uint256 i = 0; i < n; i++) {
             //save workerId
-            selectedDataIds[i] = workerIds[indices[i]];
+            selectedWorkers[i] = workerIds[indices[i]];
         }
-        return selectedDataIds;
+        return selectedWorkers;
     }
 
     //generate a random number
