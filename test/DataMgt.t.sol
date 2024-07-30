@@ -43,13 +43,6 @@ contract DataMgtTest is Test {
         assertEq(registryId, dataId);
     }
 
-    function test_getAllData() public {
-        test_Registry();
-
-        DataInfo[] memory dataInfo = dataMgt.getAllData();
-        assertEq(dataInfo.length, 1);
-    }
-
     function test_getDataById() public {
         test_Registry();
 

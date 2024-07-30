@@ -78,13 +78,6 @@ interface IDataMgt {
     
 
     /**
-     * @notice Get all data registered by Data Provider
-     * @return return all data
-     */
-    function getAllData(
-    ) external view returns (DataInfo[] memory);
-
-    /**
      * @notice Get data by owner
      * @param owner The owner of data
      * @return return data owned by the owner

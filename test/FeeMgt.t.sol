@@ -3,7 +3,7 @@
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
-import {TestERC20} from "./TestERC20.sol";
+import {TestERC20} from "./mock/TestERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
@@ -20,7 +20,7 @@ contract FeeMgtTest is Test {
 
     function setUp() public {
         feeMgt = new FeeMgt();
-        feeMgt.initialize();
+        feeMgt.initialize(1);
         ETH_HASH = getTokenSymbolHash("ETH");
     }
 
@@ -28,17 +28,17 @@ contract FeeMgtTest is Test {
         return keccak256(bytes(tokenSymbol));
     }
 
-    function addFeeToken(string memory tokenSymbol, string memory desc) internal {
+    function addFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
-        feeMgt.addFeeToken(tokenSymbol, address(erc20));
+        feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20Map[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
     }
 
     function test_addFeeToken() public {
-        addFeeToken("TEST", "Test Token");
-        addFeeToken("bTEST", "The Second Test Token");
+        addFeeToken("TEST", "Test Token", 1);
+        addFeeToken("bTEST", "The Second Test Token", 1);
     }
 
     function test_getFeeTokens() public {
@@ -111,7 +111,6 @@ contract FeeMgtTest is Test {
         bytes32 taskId;
         address submitter;
         string tokenSymbol;
-        uint256 computingPrice;
         address[] workerOwners;
         uint256 dataPrice;
         address[] dataProviders;
@@ -132,7 +131,6 @@ contract FeeMgtTest is Test {
             taskId: taskId,
             submitter: msg.sender,
             tokenSymbol: tokenSymbol,
-            computingPrice: 1,
             workerOwners: workerOwners,
             dataPrice: 1,
             dataProviders: dataProviders
@@ -142,19 +140,19 @@ contract FeeMgtTest is Test {
 
     function test_lock(string memory tokenSymbol) internal {
         test_transferToken(tokenSymbol);
+        FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         feeMgt.lock(
             info.taskId,
             info.submitter,
             info.tokenSymbol,
-            info.computingPrice,
             info.workerOwners,
             info.dataPrice,
             info.dataProviders
         );
 
-        uint256 lockedAmount = info.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free - lockedAmount, allowance.free, "allowance.free change error");
         assertEq(oldAllowance.locked + lockedAmount, allowance.locked, "allowance.locked change error");
@@ -169,6 +167,7 @@ contract FeeMgtTest is Test {
 
     function test_settle(string memory tokenSymbol) internal {
         test_lock(tokenSymbol);
+        FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         uint256 oldBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
@@ -178,13 +177,12 @@ contract FeeMgtTest is Test {
             TaskStatus.COMPLETED,
             info.submitter,
             info.tokenSymbol,
-            info.computingPrice,
             info.workerOwners,
             info.dataPrice,
             info.dataProviders
         );
 
-        uint256 lockedAmount = info.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, allowance.free);
         assertEq(oldAllowance.locked - lockedAmount, allowance.locked);

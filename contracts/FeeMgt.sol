@@ -14,6 +14,7 @@ import {TaskStatus} from "./interface/ITaskMgt.sol";
  */
 contract FeeMgt is IFeeMgt, Initializable {
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
+    mapping(string symbol => uint256 computingFee) private _computingPriceForSymbol;
 
     string[] private _symbolList;
 
@@ -21,7 +22,8 @@ contract FeeMgt is IFeeMgt, Initializable {
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
 
-    function initialize() public initializer {
+    function initialize(uint256 computingPriceForETH) public initializer {
+        _addFeeToken("ETH", address(0), computingPriceForETH);
     }
 
     /**
@@ -55,7 +57,6 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
      * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
@@ -65,12 +66,14 @@ contract FeeMgt is IFeeMgt, Initializable {
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        uint256 computingPrice,
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
+        uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
+        require(computingPrice > 0, "computing price is not set");
+
         uint256 toLockAmount = workerOwners.length * computingPrice + dataProviders.length * dataPrice;
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
 
@@ -88,7 +91,6 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
      * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
@@ -99,12 +101,14 @@ contract FeeMgt is IFeeMgt, Initializable {
         TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
-        uint256 computingPrice,
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
+        uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
+        require(computingPrice > 0, "computing price is not set");
+
         // TODO
         if (taskResultStatus == TaskStatus.COMPLETED) {}
 
@@ -156,22 +160,26 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
      * @param tokenAddress The new fee token address.
+     * @param computingPrice The computing price for the token.
      * @return Returns true if the adding is successful.
      */
-    function addFeeToken(string calldata tokenSymbol, address tokenAddress) external returns (bool) {
-        return _addFeeToken(tokenSymbol, tokenAddress);
+    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool) {
+        return _addFeeToken(tokenSymbol, tokenAddress, computingPrice);
     }
 
     /**
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
      * @param tokenAddress The new fee token address.
+     * @param computingPrice The computing price for the token.
      * @return Returns true if the adding is successful.
      */
-    function _addFeeToken(string memory tokenSymbol, address tokenAddress) internal returns (bool) {
+    function _addFeeToken(string memory tokenSymbol, address tokenAddress, uint256 computingPrice) internal returns (bool) {
         require(_tokenAddressForSymbol[tokenSymbol] == address(0), "token symbol already exists");
+        require(_computingPriceForSymbol[tokenSymbol] == 0, "computing price already exists");
 
         _tokenAddressForSymbol[tokenSymbol] = tokenAddress;
+        _computingPriceForSymbol[tokenSymbol] = computingPrice;
         _symbolList.push(tokenSymbol);
         return true;
     }
@@ -182,23 +190,38 @@ contract FeeMgt is IFeeMgt, Initializable {
      */
     function getFeeTokens() external view returns (FeeTokenInfo[] memory) {
         uint256 symbolListLength = _symbolList.length;
-        FeeTokenInfo[] memory tokenInfos = new FeeTokenInfo[](symbolListLength + 1);
+        FeeTokenInfo[] memory tokenInfos = new FeeTokenInfo[](symbolListLength);
 
         for (uint256 i = 0; i < _symbolList.length; i++) {
             string storage symbol = _symbolList[i];
 
             tokenInfos[i] = FeeTokenInfo({
                 symbol: symbol,
-                tokenAddress: _tokenAddressForSymbol[symbol]
+                tokenAddress: _tokenAddressForSymbol[symbol],
+                computingPrice: _computingPriceForSymbol[symbol]
             });
         }
 
-        tokenInfos[tokenInfos.length - 1] = FeeTokenInfo({
-            symbol: "ETH",
-            tokenAddress: address(0)
-        });
 
         return tokenInfos;
+    }
+
+    /**
+     * @notice Get fee token by token symbol.
+     * @param tokenSymbol The token symbol.
+     * @return Returns the fee token.
+     */
+    function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory) {
+        FeeTokenInfo memory info = FeeTokenInfo({
+            symbol: tokenSymbol,
+            tokenAddress: _tokenAddressForSymbol[tokenSymbol],
+            computingPrice: _computingPriceForSymbol[tokenSymbol]
+        });
+
+        if (!_isETH(tokenSymbol)) {
+            require(info.tokenAddress != address(0), "fee token does not exist");
+        }
+        return info;
     }
 
     /**

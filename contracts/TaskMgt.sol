@@ -21,7 +21,6 @@ contract TaskMgt is ITaskMgt, Initializable{
 
     uint256 private _taskCount;
 
-    uint256 private constant COMPUTING_PRICE = 1;
     function initialize(IDataMgt dataMgt, IFeeMgt feeMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
@@ -126,7 +125,6 @@ contract TaskMgt is ITaskMgt, Initializable{
             taskId,
             msg.sender,
             priceInfo.tokenSymbol,
-            COMPUTING_PRICE,
             workerOwners,
             priceInfo.price,
             dataProviders
@@ -185,7 +183,6 @@ contract TaskMgt is ITaskMgt, Initializable{
             task.status,
             task.submitter,
             task.tokenSymbol,
-            task.computingInfo.price,
             getWorkerOwners(task.computingInfo.workerIds),
             dataInfo.priceInfo.price,
             dataProviders
