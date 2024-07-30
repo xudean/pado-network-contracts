@@ -47,8 +47,7 @@ contract WorkerMgtTest is Test {
     function testSelectWorker() public {
         for (uint32 i; i < 10; i++) {
             uint32[] memory workers = workerSelectMock
-                .selectMultiplePublicKeyWorkers(
-                    keccak256(abi.encode(msg.sender)),
+                .selectWorkers(
                     5
                 );
             string memory workersStr = uint32ArrayToString(workers);
