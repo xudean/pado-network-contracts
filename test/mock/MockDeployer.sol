@@ -83,13 +83,13 @@ contract MockDeployer is Test {
             )
         );
 
-        IFeeMgt feeMgtImplementation = new FeeMgt(taskMgt);
+        IFeeMgt feeMgtImplementation = new FeeMgt();
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(feeMgt))),
             address(feeMgtImplementation)
         );
 
-        FeeMgt(address(feeMgt)).initialize(1);
+        FeeMgt(address(feeMgt)).initialize(taskMgt, 1);
 
         feeMgt.setTaskMgt(taskMgt);
 

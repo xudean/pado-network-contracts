@@ -23,13 +23,13 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(ITaskMgt taskMgt) {
-        _taskMgt = taskMgt;
+    constructor() {
         _disableInitializers();
     }
 
 
-    function initialize(uint256 computingPriceForETH) public initializer {
+    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH) public initializer {
+        _taskMgt = taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
         __Ownable_init();
     }
