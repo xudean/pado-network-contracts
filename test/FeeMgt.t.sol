@@ -8,19 +8,15 @@ import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.s
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MockDeployer} from "./mock/MockDeployer.sol";
 
-contract FeeMgtTest is Test {
-    FeeMgt private feeMgt;
-    mapping(string tokenSymbol => TestERC20 erc20) erc20Map;
-    string[] tokenSymbolList;
-
+contract FeeMgtTest is MockDeployer {
     bytes32 private ETH_HASH;
     receive() external payable {
     }
 
     function setUp() public {
-        feeMgt = new FeeMgt();
-        feeMgt.initialize(1);
+        _deployAll();
         ETH_HASH = getTokenSymbolHash("ETH");
     }
 
@@ -32,7 +28,7 @@ contract FeeMgtTest is Test {
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
-        erc20Map[tokenSymbol] = erc20;
+        erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
     }
 
@@ -56,12 +52,12 @@ contract FeeMgtTest is Test {
         assertEq(feeMgt.isSupportToken("ETH"), true);
     }
 
-    function getBalance(address target, string memory tokenSymbol) internal returns (uint256) {
+    function getBalance(address target, string memory tokenSymbol) internal view returns (uint256) {
         bytes32 hash = getTokenSymbolHash(tokenSymbol);
         if (hash == ETH_HASH) {
             return address(target).balance;
         }
-        return erc20Map[tokenSymbol].balanceOf(target);
+        return erc20PerSymbol[tokenSymbol].balanceOf(target);
     }
 
     function test_transferToken_ETH() public {
@@ -77,7 +73,7 @@ contract FeeMgtTest is Test {
     function test_transferToken_TEST() public {
         test_addFeeToken();
 
-        TestERC20 erc20 = erc20Map["TEST"];
+        TestERC20 erc20 = erc20PerSymbol["TEST"];
         erc20.mint(msg.sender, 100);
         uint256 ownerBalance = erc20.balanceOf(msg.sender);
         assertEq(ownerBalance, 100, "ownerBalance error");

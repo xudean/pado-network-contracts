@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
@@ -12,11 +11,12 @@ import {EncryptionSchema, PriceInfo, DataMgt} from "../contracts/DataMgt.sol";
 import {ITaskMgtEvents} from "./events/ITaskMgtEvents.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract TaskMgtTest is Test, ITaskMgtEvents {
-    ITaskMgt taskMgt;
-    IDataMgt dataMgt;
-    IFeeMgt feeMgt;
+import {MockDeployer} from "./mock/MockDeployer.sol";
+
+contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
     bytes32 taskId;
     TestERC20 erc20;
@@ -27,22 +27,12 @@ contract TaskMgtTest is Test, ITaskMgtEvents {
     address private constant data_provider_address = address(uint160(uint256(keccak256("data provider"))));
 
     function setUp() public {
-        TaskMgt mgt = new TaskMgt();
+        _deployAll();
 
-        DataMgt datamgt = new DataMgt();
-        datamgt.initialize();
-        dataMgt = datamgt;
-
-        FeeMgt feemgt = new FeeMgt();
-        feemgt.initialize(1);
         TestERC20 bETH = new TestERC20();
         bETH.initialize("TEST ETH", "bETH", 18);
         erc20 = bETH;
-        feemgt.addFeeToken("bETH", address(bETH), 1);
-        feeMgt = feemgt;
-        
-        mgt.initialize(dataMgt, feeMgt);
-        taskMgt = mgt;
+        feeMgt.addFeeToken("bETH", address(bETH), 1);
 
         dataId = registerData(TOKEN_SYMBOL);
     }

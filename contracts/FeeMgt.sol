@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
 import {TaskStatus} from "./interface/ITaskMgt.sol";
@@ -12,7 +12,7 @@ import {TaskStatus} from "./interface/ITaskMgt.sol";
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
-contract FeeMgt is IFeeMgt, Initializable {
+contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
     mapping(string symbol => uint256 computingFee) private _computingPriceForSymbol;
 
@@ -21,9 +21,15 @@ contract FeeMgt is IFeeMgt, Initializable {
     mapping(address dataUser => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForDataUser;
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
 
     function initialize(uint256 computingPriceForETH) public initializer {
         _addFeeToken("ETH", address(0), computingPriceForETH);
+        __Ownable_init();
     }
 
     /**

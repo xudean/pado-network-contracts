@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo} from "./interface/ITaskMgt.sol";
 import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
@@ -10,7 +10,7 @@ import {IFeeMgt} from "./interface/IFeeMgt.sol";
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
  */
-contract TaskMgt is ITaskMgt, Initializable{
+contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     IDataMgt public _dataMgt;
     IFeeMgt public _feeMgt;
 
@@ -21,10 +21,16 @@ contract TaskMgt is ITaskMgt, Initializable{
 
     uint256 private _taskCount;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(IDataMgt dataMgt, IFeeMgt feeMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
         _taskCount = 0;
+        __Ownable_init();
     }
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
@@ -272,7 +278,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param dataVerifier The data verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setDataVerifier(uint32 taskType, address dataVerifier) external returns (bool) {
+    function setDataVerifier(uint32 taskType, address dataVerifier) external onlyOwner returns (bool) {
         return true;
     }
 
@@ -282,7 +288,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param resultVerifier The result verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setResultVerifier(uint32 taskType, address resultVerifier) external returns (bool) {
+    function setResultVerifier(uint32 taskType, address resultVerifier) external onlyOwner returns (bool) {
         return true;
     }
 }

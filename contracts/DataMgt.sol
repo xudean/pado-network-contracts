@@ -2,22 +2,22 @@
 
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
 /**
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
  */
-contract DataMgt is IDataMgt, Initializable {
+contract DataMgt is IDataMgt, OwnableUpgradeable {
     uint256 private _registryCount;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
 
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
     
     /// @custom:oz-upgrades-unsafe-allow constructor
-    /// constructor() {
-    ///     _disableInitializers();
-    /// }
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         _registryCount = 0;
