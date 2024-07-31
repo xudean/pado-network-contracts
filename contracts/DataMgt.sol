@@ -62,7 +62,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         _dataInfos[dataId] = dataInfo;
         _dataIdListPerOwner[msg.sender].push(dataId);
 
-        emit PrepareRegistry(dataId, publicKeys);
+        emit DataPrepareRegistry(dataId, publicKeys);
     }
 
     /**
@@ -88,6 +88,8 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         dataInfo.dataContent = dataContent;
 
         dataInfo.status = DataStatus.REGISTERED;
+
+        emit DataRegistered(dataId);
 
         return dataId;
     }
@@ -135,5 +137,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         require(dataInfo.status != DataStatus.DELETED, "data already deleted");
 
         dataInfo.status = DataStatus.DELETED;
+
+        emit DataDeleted(dataId);
     }
 }

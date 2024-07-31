@@ -56,6 +56,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         Allowance storage allowance = _allowanceForDataUser[from][tokenSymbol];
 
         allowance.free += amount;
+
+        emit TokenTransfered(from, tokenSymbol, amount);
     }
 
     /**
@@ -81,6 +83,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         allowance.free -= toLockAmount;
         allowance.locked += toLockAmount;
         _lockedAmountForTaskId[taskId] = toLockAmount;
+
+        emit FeeLocked(taskId, tokenSymbol, toLockAmount);
         return true;
     }
 
@@ -121,29 +125,17 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         require(lockedAmount >= expectedAllowance, "locked not enough");
 
         if (expectedAllowance > 0) {
-            if (_isETH(tokenSymbol)) {
-                for (uint256 i = 0; i < workerOwners.length; i++) {
-                    payable(workerOwners[i]).transfer(computingPrice);
-                }
-    
-                for (uint256 i = 0; i < dataProviders.length; i++) {
-                    payable(dataProviders[i]).transfer(dataPrice);
-                }
-            }
-            else {
-                require(_tokenAddressForSymbol[tokenSymbol] != address(0), "can not find token address");
-                IERC20 tokenAddress = IERC20(_tokenAddressForSymbol[tokenSymbol]);
-    
-                for (uint256 i = 0; i < workerOwners.length; i++) {
-                    tokenAddress.transfer(workerOwners[i], computingPrice);
-                }
-    
-                for (uint256 i = 0; i < dataProviders.length; i++) {
-                    tokenAddress.transfer(dataProviders[i], dataPrice);
-                }
-            }
+            _settle(
+                taskId,
+                tokenSymbol,
+                computingPrice,
+                workerOwners,
+                dataPrice,
+                dataProviders
+            );
     
             allowance.locked -= expectedAllowance;
+
         }
         if (lockedAmount > expectedAllowance) {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
@@ -180,6 +172,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         _tokenAddressForSymbol[tokenSymbol] = tokenAddress;
         _computingPriceForSymbol[tokenSymbol] = computingPrice;
         _symbolList.push(tokenSymbol);
+
+        emit FeeTokenAdded(tokenSymbol, tokenAddress, computingPrice);
         return true;
     }
 
@@ -251,5 +245,52 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      */
     function _isETH(string memory tokenSymbol) internal pure returns (bool) {
         return keccak256(bytes(tokenSymbol)) == keccak256(bytes("ETH"));
+    }
+
+    /**
+     * @notice TaskMgt contract request settlement fee.
+     * @param taskId The task id.
+     * @param tokenSymbol The fee token symbol.
+     * @param computingPrice The computing price of the task.
+     * @param workerOwners The owner address of all workers which have already run the task.
+     * @param dataPrice The data price of the task.
+     * @param dataProviders The address of data providers which provide data to the task.
+     * @return Returns true if the settlement is successful.
+     */
+    function _settle(
+        bytes32 taskId,
+        string memory tokenSymbol,
+        uint256 computingPrice,
+        address[] memory workerOwners,
+        uint256 dataPrice,
+        address[] memory dataProviders
+    ) internal returns (bool) {
+        uint256 settledFee = 0;
+        if (_isETH(tokenSymbol)) {
+            for (uint256 i = 0; i < workerOwners.length; i++) {
+                payable(workerOwners[i]).transfer(computingPrice);
+                settledFee += computingPrice;
+            }
+
+            for (uint256 i = 0; i < dataProviders.length; i++) {
+                payable(dataProviders[i]).transfer(dataPrice);
+                settledFee += dataPrice;
+            }
+        }
+        else {
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "can not find token address");
+            IERC20 tokenAddress = IERC20(_tokenAddressForSymbol[tokenSymbol]);
+
+            for (uint256 i = 0; i < workerOwners.length; i++) {
+                tokenAddress.transfer(workerOwners[i], computingPrice);
+                settledFee += computingPrice;
+            }
+
+            for (uint256 i = 0; i < dataProviders.length; i++) {
+                tokenAddress.transfer(dataProviders[i], dataPrice);
+                settledFee += dataPrice;
+            }
+        }
+        emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
 }

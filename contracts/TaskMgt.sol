@@ -121,13 +121,13 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         for (uint256 i = 0; i < workerIds.length; i++) {
             _taskIdForWorker[workerIds[i]].push(taskId);
         }
-        emit TaskDispatched(taskId, workerIds);
         _feeMgt.lock(
             taskId,
             msg.sender,
             priceInfo.tokenSymbol,
             fee
         );
+        emit TaskDispatched(taskId, workerIds);
 
         return taskId;
     }
@@ -172,7 +172,6 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         _pendingTaskIds.pop();
 
         task.status = TaskStatus.COMPLETED;
-        emit TaskCompleted(task.taskId);
 
         address[] memory dataProviders = new address[](1);
         dataProviders[0] = dataInfo.owner;
@@ -186,6 +185,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
             dataInfo.priceInfo.price,
             dataProviders
         );
+        emit TaskCompleted(task.taskId);
     }
 
     /**
@@ -222,6 +222,8 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         if (waitingListLength == 0) {
             _onTaskCompleted(taskId);
         }
+
+        emit ResultReported(taskId, msg.sender);
 
         return true;
     }

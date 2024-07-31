@@ -22,6 +22,34 @@ struct Allowance {
  * @notice FeeMgt - Fee Management interface.
  */
 interface IFeeMgt {
+    // emit in addFeeToken
+    event FeeTokenAdded(
+        string indexed tokenSymbol,
+        address indexed tokenAddress,
+        uint256 indexed computingPrice
+    );
+
+    // emit in transfer token
+    event TokenTransfered(
+        address indexed from,
+        string indexed tokenSymbol,
+        uint256 indexed amount
+    );
+
+    // emit in lock
+    event FeeLocked(
+        bytes32 indexed taskId,
+        string indexed tokenSymbol,
+        uint256 indexed amount
+    );
+
+    // emit in settle
+    event FeeSettled(
+        bytes32 indexed taskId,
+        string indexed tokenSymbol,
+        uint256 indexed amount
+    );
+
     /**
      * @notice TaskMgt contract request transfer tokens.
      * @param from The address from which transfer token.

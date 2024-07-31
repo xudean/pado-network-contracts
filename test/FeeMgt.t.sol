@@ -32,16 +32,18 @@ contract FeeMgtTest is MockDeployer {
         tokenSymbolList.push(tokenSymbol);
     }
 
-    function test_addFeeToken() public {
+    function test_addFeeToken() public returns (uint256){
         addFeeToken("TEST", "Test Token", 1);
         addFeeToken("bTEST", "The Second Test Token", 1);
+        return 2;
     }
 
     function test_getFeeTokens() public {
-        test_addFeeToken();
+        FeeTokenInfo[] memory oldTokenList = feeMgt.getFeeTokens();
+        uint256 addedNum = test_addFeeToken();
         FeeTokenInfo[] memory tokenList = feeMgt.getFeeTokens();
 
-        assertEq(tokenList.length, tokenSymbolList.length + 1);
+        assertEq(tokenList.length - oldTokenList.length, addedNum);
 
     }
 
