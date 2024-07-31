@@ -22,8 +22,8 @@ import "../../../contracts/DataMgt.sol";
 import "../../../contracts/TaskMgt.sol";
 
 // # To deploy and verify our contract
-// forge script script/deploy/mainnet/Holesky_DeployPADONetworkContracts.s.sol:Holesky_DeployPADONetworkContracts --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
-contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
+// forge script script/deploy/mainnet/Mainnet_DeployPADONetworkContracts.s.sol:Mainnet_DeployPADONetworkContracts --rpc-url $MAINNET_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
+contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
         string(
             bytes(

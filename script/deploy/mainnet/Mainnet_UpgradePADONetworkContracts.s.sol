@@ -15,8 +15,8 @@ import "../../../contracts/FeeMgt.sol";
 import "../../../contracts/DataMgt.sol";
 import "../../../contracts/TaskMgt.sol";
 
-//forge script script/deploy/mainnet/Holesky_UpgradePADONetworkContracts.s.sol:Holesky_UpgradePADONetworkContracts --rpc-url [rpc_url]  --private-key [private_key] --broadcast
-contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
+//forge script script/deploy/mainnet/Mainnet_UpgradePADONetworkContracts.s.sol:Mainnet_UpgradePADONetworkContracts --rpc-url [rpc_url]  --private-key [private_key] --broadcast
+contract Mainnet_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
     string public existingUpgradeInfoPath =
         string(
             bytes(
