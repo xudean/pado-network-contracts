@@ -226,7 +226,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         vm.serializeAddress(deployed_addresses, "dataMgt", address(dataMgt));
         vm.serializeAddress(
             deployed_addresses,
-            "datdataMgtImplementationaMgt",
+            "dataMgtImplementation",
             address(dataMgtImplementation)
         );
 
