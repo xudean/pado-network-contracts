@@ -1,27 +1,27 @@
 {
   "addresses": {
-    "blsApkRegistry": "0x617f1B33e60C39aB236C352a30dA1055D20Fc109",
-    "blsApkRegistryImplementation": "0x180040b56Eab2416dEbA4e14B12Ee7BB3E776557",
-    "indexRegistry": "0xC9cc35E61870B59dd8579Baa60630BCc9A1Ac74b",
-    "indexRegistryImplementation": "0xA5e09B715d8F732b4395bAd359cb9847F6FA23B7",
-    "operatorStateRetriever": "0x985a5F54B33a0B1d95b2D09F785cB21d87E23AB7",
-    "proxyAdmin": "0xDccB2af7d831BC0c332270c1ca2B86Ab792b08CD",
-    "registryCoordinator": "0x9C9d56cd188D42cf66a2B9236CcfBE5D9B4ECF8e",
-    "registryCoordinatorImplementation": "0xDbc760A832f6344e738D84055Ec85D40BE5f6BBb",
-    "serviceManager": "0x1c367E1ce8E5992F8ee8E95396EeD655f5D1C838",
-    "serviceManagerImplementation": "0x762e26a922Ebb98F526077F9D8e68f39409E748C",
-    "stakeRegistry": "0xb243366ec7b048F826878006087B64B16Ae5b01c",
-    "stakeRegistryImplementation": "0xb21dd738511171b9e05E3D8f8bfFad36e2501D8f"
+    "blsApkRegistry": "0x379bc65e0CDfEc3697B1Ae1Bcf09ba15B161D22c",
+    "blsApkRegistryImplementation": "0x82C74BBD3FEF92B93d38Bdef981383450602a5a3",
+    "indexRegistry": "0x8128ea745AEBF88a4223c7Fb2267dc773CaE25e2",
+    "indexRegistryImplementation": "0x32F2b1303fFA00b2b5Ed9f1988b4932440858d22",
+    "operatorStateRetriever": "0x41119Db20f866E72916138ac2468320c5A27CCe8",
+    "proxyAdmin": "0x3Ec15fEb0f0082b2080ef742f49Ded0C112D2a3C",
+    "registryCoordinator": "0xF5AF66616eF7B602310d2728C592CED181F9167a",
+    "registryCoordinatorImplementation": "0x66f448f809Ee478583a7DeD891EEff8a53E48903",
+    "serviceManager": "0x443fd18ab8c51c4Fc14Ec596306c0c01ef37d731",
+    "serviceManagerImplementation": "0xe4625f16975451F5D771312e6aDCA38CF8C99274",
+    "stakeRegistry": "0x70A5cbee126D1d2251321c0C8640341Ab3867913",
+    "stakeRegistryImplementation": "0x63d0828930C78550E198d25618b0F5484375a7bD"
   },
   "chainInfo": {
     "chainId": 17000,
-    "deploymentBlock": 2024060
+    "deploymentBlock": 2036486
   },
   "permissions": {
-    "churner": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
-    "ejector": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
-    "networkOwner": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
-    "networkUpgrader": "0xeA96Fa8F6a185D6B97eCDeb9805178F6C2829eeE",
-    "pauserRegistry": "0x72d791A512576C492328495a6304a4D5C9D89Df0"
+    "churner": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
+    "ejector": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
+    "networkOwner": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
+    "networkUpgrader": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
+    "pauserRegistry": "0xE21BC39581C67B3F76d701A44453aF4c23df7994"
   }
 }

@@ -23,7 +23,6 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 
 // EigenLayer middleware
 import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
-import {PADORegistryCoordinator} from "../../../contracts/PADORegistryCoordinator.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
@@ -36,6 +35,7 @@ import {IStakeRegistry} from "@eigenlayer-middleware/src/interfaces/IStakeRegist
 import {ServiceManager} from "../../../contracts/ServiceManager.sol";
 import {OperatorStateRetriever} from "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
 import {RewardsCoordinator} from "../../../lib/eigenlayer-middleware/lib/eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 
 // # To deploy and verify our contract
 // forge script script/deploy/mainnet/Holesky_DeployPADONetworkContracts.s.sol --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv

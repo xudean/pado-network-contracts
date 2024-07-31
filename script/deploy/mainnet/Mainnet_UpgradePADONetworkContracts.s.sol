@@ -13,7 +13,8 @@ import {Utils} from "../utils/Utils.s.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
 import {UpgradeContractParser} from "../utils/UpgradeContractParser.sol";
-import {RegistryCoordinator, IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IndexRegistry} from "@eigenlayer-middleware/src/IndexRegistry.sol";
 import {BLSSignatureChecker} from "@eigenlayer-middleware/src/BLSSignatureChecker.sol";
@@ -116,7 +117,7 @@ contract Mainnet_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             address(serviceManagerImplementation)
         );
         console.log("upgrade serviceManagerImplementation");
-        registryCoordinatorImplementation = new RegistryCoordinator(
+        registryCoordinatorImplementation = new PADORegistryCoordinator(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,

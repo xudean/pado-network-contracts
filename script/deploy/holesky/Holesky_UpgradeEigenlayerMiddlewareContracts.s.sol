@@ -13,13 +13,13 @@ import {Utils} from "../utils/Utils.s.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
 import {UpgradeContractParser} from "../utils/UpgradeContractParser.sol";
-import {RegistryCoordinator, IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IndexRegistry} from "@eigenlayer-middleware/src/IndexRegistry.sol";
 import {BLSSignatureChecker} from "@eigenlayer-middleware/src/BLSSignatureChecker.sol";
 import {StakeRegistry} from "@eigenlayer-middleware/src/StakeRegistry.sol";
 import {OperatorStateRetriever} from "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
-import {RewardsCoordinator} from "../../../lib/eigenlayer-middleware/lib/eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 import {ServiceManagerBase} from "@eigenlayer-middleware/src/ServiceManagerBase.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 
@@ -34,8 +34,8 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 
 import {ServiceManager} from "../../../contracts/ServiceManager.sol";
 
-//forge script script/deploy/holesky/Holesky_UpgradePADONetworkContracts.s.sol:Holesky_UpgradePADONetworkContracts --rpc-url [rpc_url]  --private-key [private_key] --broadcast
-contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
+//forge script script/deploy/holesky/Holesky_UpgradeEigenlayerMiddlewareContracts.s.sol:Holesky_UpgradeEigenlayerMiddlewareContracts --rpc-url [rpc_url]  --private-key [private_key] --broadcast
+contract Holesky_UpgradeEigenlayerMiddlewareContracts is Utils, UpgradeContractParser {
     string public existingUpgradeInfoPath =
     string(
         bytes(
@@ -116,7 +116,7 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             address(serviceManagerImplementation)
         );
         console.log("upgrade serviceManagerImplementation");
-        registryCoordinatorImplementation = new RegistryCoordinator(
+        registryCoordinatorImplementation = new PADORegistryCoordinator(
             serviceManager,
             stakeRegistry,
             blsApkRegistry,

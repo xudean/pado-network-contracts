@@ -6,6 +6,8 @@ import "forge-std/StdJson.sol";
 
 import {Utils} from "../utils/Utils.s.sol";
 import {ExistingDeploymentParser} from "../utils/ExistingDeploymentParser.sol";
+import "forge-std/console.sol";
+
 
 // OpenZeppelin
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -21,9 +23,9 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 
 // EigenLayer middleware
 import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
-import {PADORegistryCoordinator} from "../../../contracts/PADORegistryCoordinator.sol";
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
+// import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {IndexRegistry} from "@eigenlayer-middleware/src/IndexRegistry.sol";
 import {IIndexRegistry} from "@eigenlayer-middleware/src/interfaces/IIndexRegistry.sol";
@@ -34,19 +36,26 @@ import {IStakeRegistry} from "@eigenlayer-middleware/src/interfaces/IStakeRegist
 import {ServiceManager} from "../../../contracts/ServiceManager.sol";
 import {OperatorStateRetriever} from "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
 import {RewardsCoordinator} from "../../../lib/eigenlayer-middleware/lib/eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 
 // # To deploy and verify our contract
-// forge script script/deploy/holesky/Holesky_DeployPADONetworkContracts.s.sol --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
-contract Holesky_DeployPADONetworkContracts{
+// forge script script/deploy/holesky/Holesky_DeployEigenlayerMiddlewareContracts.s.sol:Holesky_DeployEigenlayerMiddlewareContracts --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
+contract Holesky_DeployEigenlayerMiddlewareContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
     string(
         bytes(
-            "script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
+            "./script/deploy/holesky/config/eigenlayer_deployment_holesky.json"
+        )
+    );
+    string public deployConfigPath =
+    string(
+        bytes(
+            "./script/deploy/holesky/config/middleware_config_holesky.json"
         )
     );
     string public outputPath =
     string.concat(
-        "script/deploy/holesky/output/17000/padonetwork_contracts_deployment_data_holesky.json"
+        "script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
     );
 
     ProxyAdmin public proxyAdmin;
