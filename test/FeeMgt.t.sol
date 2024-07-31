@@ -67,11 +67,11 @@ contract FeeMgtTest is Test {
     function test_transferToken_ETH() public {
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
         uint256 balance = address(feeMgt).balance;
-        assertEq(balance, 5);
+        assertEq(balance, 5, "balance error");
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, "ETH");
-        assertEq(allowance.free, 5);
-        assertEq(allowance.locked, 0);
+        assertEq(allowance.free, 5, "allowance.free error");
+        assertEq(allowance.locked, 0, "allowance.locked error");
     }
 
     function test_transferToken_TEST() public {
@@ -80,21 +80,21 @@ contract FeeMgtTest is Test {
         TestERC20 erc20 = erc20Map["TEST"];
         erc20.mint(msg.sender, 100);
         uint256 ownerBalance = erc20.balanceOf(msg.sender);
-        assertEq(ownerBalance, 100);
+        assertEq(ownerBalance, 100, "ownerBalance error");
 
         vm.prank(msg.sender);
         erc20.approve(address(feeMgt), 5);
         uint256 spenderAllowance = erc20.allowance(msg.sender, address(feeMgt));
-        assertEq(spenderAllowance, 5);
+        assertEq(spenderAllowance, 5, "spenderAllowance error");
         
 
         feeMgt.transferToken(msg.sender, "TEST", 5);
         uint256 balance = erc20.balanceOf(address(feeMgt));
-        assertEq(balance, 5);
+        assertEq(balance, 5, "balance error");
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, "TEST");
-        assertEq(allowance.free, 5);
-        assertEq(allowance.locked, 0);
+        assertEq(allowance.free, 5, "allowance.free error");
+        assertEq(allowance.locked, 0, "allowance.locked error");
     }
 
     function test_transferToken(string memory tokenSymbol) internal {
@@ -143,16 +143,14 @@ contract FeeMgtTest is Test {
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         feeMgt.lock(
             info.taskId,
             info.submitter,
             info.tokenSymbol,
-            info.workerOwners,
-            info.dataPrice,
-            info.dataProviders
+            lockedAmount
         );
 
-        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free - lockedAmount, allowance.free, "allowance.free change error");
         assertEq(oldAllowance.locked + lockedAmount, allowance.locked, "allowance.locked change error");

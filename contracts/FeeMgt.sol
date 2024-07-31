@@ -57,24 +57,17 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
-     * @param dataPrice The data price of the task.
-     * @param dataProviders The address of data providers which provide data to the task.
+     * @param toLockAmount The amount of fee to lock.
      * @return Returns true if the settlement is successful.
      */
     function lock(
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
-        uint256 dataPrice,
-        address[] calldata dataProviders
+        uint256 toLockAmount 
     ) external returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
-        uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
-        require(computingPrice > 0, "computing price is not set");
 
-        uint256 toLockAmount = workerOwners.length * computingPrice + dataProviders.length * dataPrice;
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
 
         require(allowance.free >= toLockAmount, "Insufficient free allowance");

@@ -39,18 +39,14 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
-     * @param dataPrice The data price of the task.
-     * @param dataProviders The address of data providers which provide data to the task.
+     * @param toLockAmount The amount of fee to lock.
      * @return Returns true if the settlement is successful.
      */
     function lock(
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
-        uint256 dataPrice,
-        address[] calldata dataProviders
+        uint256 toLockAmount 
     ) external returns (bool);
 
     /**

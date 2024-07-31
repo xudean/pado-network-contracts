@@ -35,11 +35,18 @@ contract DataMgt is IDataMgt, Initializable {
         _registryCount++;
 
         // TODO
-        publicKeys = new bytes[](1);
-        publicKeys[0] = bytes("test");
+        publicKeys = new bytes[](3);
+        publicKeys[0] = bytes("test 0");
+        publicKeys[1] = bytes("test 1");
+        publicKeys[2] = bytes("test 2");
 
-        bytes32[] memory workerIds = new bytes32[](1);
-        workerIds[0] = keccak256(abi.encode(msg.sender));
+        address worker_address_0 = address(uint160(uint256(keccak256("worker 0"))));
+        address worker_address_1 = address(uint160(uint256(keccak256("worker 1"))));
+        address worker_address_2 = address(uint160(uint256(keccak256("worker 2"))));
+        bytes32[] memory workerIds = new bytes32[](3);
+        workerIds[0] = keccak256(abi.encode(worker_address_0));
+        workerIds[1] = keccak256(abi.encode(worker_address_1));
+        workerIds[2] = keccak256(abi.encode(worker_address_2));
 
         DataInfo memory dataInfo = DataInfo({
                 dataId: dataId,

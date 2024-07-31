@@ -52,7 +52,7 @@ contract TaskMgt is ITaskMgt, Initializable{
 
         address[] memory workerOwners = new address[](workerIdLength);
         for (uint256 i = 0; i < workerIdLength; i++) {
-            workerOwners[i] = address(uint160(uint256(keccak256(abi.encode(workerIds)))));
+            workerOwners[i] = address(uint160(uint256(workerIds[i])));
         }
         return workerOwners;
     }
@@ -76,17 +76,12 @@ contract TaskMgt is ITaskMgt, Initializable{
 
         require(dataInfo.status == DataStatus.REGISTERED, "data status is not REGISTERED");
         
-        // TODO computing price
-        uint256 fee = priceInfo.price + workerIds.length * 1;
+        uint256 computingPrice = _feeMgt.getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
+        uint256 fee = priceInfo.price + workerIds.length * computingPrice;
         _feeMgt.transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, _taskCount));
         _taskCount++;
-
-        address[] memory dataProviders = new address[](1);
-        dataProviders[0] = dataInfo.owner;
-
-        address[] memory workerOwners = getWorkerOwners(dataInfo.workerIds);
 
         Task memory task = Task({
             taskId: taskId,
@@ -101,7 +96,7 @@ contract TaskMgt is ITaskMgt, Initializable{
                 data: new bytes[](0)
             }),
             computingInfo: ComputingInfo({
-                price: 0,
+                price: computingPrice,
                 t: encryptionSchema.t,
                 n: encryptionSchema.n,
                 workerIds: dataInfo.workerIds,
@@ -119,15 +114,13 @@ contract TaskMgt is ITaskMgt, Initializable{
         
         for (uint256 i = 0; i < workerIds.length; i++) {
             _taskIdForWorker[workerIds[i]].push(taskId);
-            emit WorkerReceiveTask(workerIds[i], taskId);
         }
+        emit TaskDispatched(taskId, workerIds);
         _feeMgt.lock(
             taskId,
             msg.sender,
             priceInfo.tokenSymbol,
-            workerOwners,
-            priceInfo.price,
-            dataProviders
+            fee
         );
 
         return taskId;
@@ -205,7 +198,7 @@ contract TaskMgt is ITaskMgt, Initializable{
         ComputingInfo storage computingInfo = task.computingInfo;
 
         uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
-        require(waitingIndex != type(uint256).max, "task id not in waiting list");
+        require(waitingIndex != type(uint256).max, "worker id not in waiting list");
 
         uint256 workerIndex = _find(workerId, computingInfo.workerIds);
         computingInfo.results[workerIndex] = result;

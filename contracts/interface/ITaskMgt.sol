@@ -68,7 +68,7 @@ struct TaskDataInfoRequest {
  * @notice TaskMgt - Task Management interface.
  */
 interface ITaskMgt {
-    event WorkerReceiveTask(bytes32 indexed workerId, bytes32 indexed taskId);
+    event TaskDispatched(bytes32 taskId, bytes32[] workerIds);
     event TaskCompleted(bytes32 taskId);
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
