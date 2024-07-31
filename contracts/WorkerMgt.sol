@@ -7,9 +7,10 @@ import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegi
 import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {PADORegistryCoordinator} from "./PADORegistryCoordinator.sol";
+// import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "./PADORegistryCoordinator.sol";
 
 contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     event WorkerRegistry(
@@ -39,10 +40,11 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     }
 
     function initialize(
-        PADORegistryCoordinator _registryCoordinator
+        PADORegistryCoordinator _registryCoordinator,
+        address networkOwner
     ) external initializer {
         registryCoordinator = _registryCoordinator;
-        __Ownable_init();
+        _transferOwnership(networkOwner);
     }
 
     /**

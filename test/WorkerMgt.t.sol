@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {WorkerMgt} from "../contracts/WorkerMgt.sol";
-import {PADORegistryCoordinator} from "../contracts/PADORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+// import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "./mock/WorkerSelectMock.t.sol";
+import "../contracts/PADORegistryCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -32,7 +32,8 @@ contract WorkerMgtTest is Test {
                     address(padoNetworkProxyAdmin),
                     abi.encodeWithSelector(
                         WorkerMgt.initialize.selector,
-                        registryCoordinator
+                        registryCoordinator,
+                        address(this)
                     )
                 )
             )
