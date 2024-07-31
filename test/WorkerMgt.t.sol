@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {WorkerMgt} from "../contracts/WorkerMgt.sol";
-import {PADORegistryCoordinator} from "../contracts/PADORegistryCoordinator.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+// import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "./mock/WorkerSelectMock.t.sol";
+import "../contracts/PADORegistryCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -32,7 +32,8 @@ contract WorkerMgtTest is Test {
                     address(padoNetworkProxyAdmin),
                     abi.encodeWithSelector(
                         WorkerMgt.initialize.selector,
-                        registryCoordinator
+                        registryCoordinator,
+                        address(this)
                     )
                 )
             )
@@ -47,8 +48,7 @@ contract WorkerMgtTest is Test {
     function testSelectWorker() public {
         for (uint32 i; i < 10; i++) {
             uint32[] memory workers = workerSelectMock
-                .selectMultiplePublicKeyWorkers(
-                    keccak256(abi.encode(msg.sender)),
+                .selectWorkers(
                     5
                 );
             string memory workersStr = uint32ArrayToString(workers);
@@ -75,6 +75,58 @@ contract WorkerMgtTest is Test {
         //        bool resultAfter  = workerMgt.checkWorkerRegistered(keccak256(publicKeys[0]));
         //        console.log("resultAfter is:%s", resultAfter);
     }
+
+    function testOwnerAddWhiteList() public {
+        console.log("owner is:%s", workerMgt.owner());
+        //not owner
+        vm.prank(address(0));
+        vm.expectRevert("Ownable: caller is not the owner");
+        workerMgt.addWhiteListItem(address(this));
+        vm.prank(address(this));
+        workerMgt.addWhiteListItem(address(this));
+        console.log(
+            "whileList is:%s",
+            workerMgt.workerWhiteList(address(this))
+        );
+        assertTrue(workerMgt.workerWhiteList(address(this)));
+    }
+
+//    function testWhiteList() public {
+//        console.log("owner is:%s", workerMgt.owner());
+//        console.log("address(this) is:%s", address(this));
+//        uint32[] memory taskTypes = new uint32[](1);
+//        taskTypes[0] = 1;
+//        bytes[] memory publicKeys = new bytes[](1);
+//        publicKeys[0] = "0x024e45D7F868C41F3723B13fD7Ae03AA5A181362";
+//        bytes memory quorumNumbers = new bytes(1);
+//        string memory socket = "";
+//        IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
+//        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+//        vm.expectRevert("workerWhiteList: worker not in whitelist");
+//
+//        workerMgt.registerEigenOperator(
+//            taskTypes,
+//            publicKeys,
+//            quorumNumbers,
+//            socket,
+//            publicKeyParams,
+//            signature
+//        );
+//        workerMgt.addWhiteListItem(address(this));
+//        console.log(
+//            "whileList is:%s",
+//            workerMgt.workerWhiteList(address(this))
+//        );
+//        vm.expectRevert("registryCoordinator not set!");
+//        workerMgt.registerEigenOperator(
+//            taskTypes,
+//            publicKeys,
+//            quorumNumbers,
+//            socket,
+//            publicKeyParams,
+//            signature
+//        );
+//    }
 
     //======================helper========================
     function uintToString(uint32 _i) public pure returns (string memory) {

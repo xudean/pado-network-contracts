@@ -7,7 +7,7 @@ import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 
 import {ServiceManagerBase} from "@eigenlayer-middleware/src/ServiceManagerBase.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
-import {RegistryCoordinator, IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
+import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
 import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
@@ -25,6 +25,7 @@ import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 
 contract UpgradeContractParser is Script, Test {
 
@@ -37,7 +38,7 @@ contract UpgradeContractParser is Script, Test {
     ServiceManager public serviceManager;
     ServiceManager public serviceManagerImplementation;
     IRegistryCoordinator public registryCoordinator;
-    RegistryCoordinator public registryCoordinatorImplementation;
+    PADORegistryCoordinator public registryCoordinatorImplementation;
     IStakeRegistry public stakeRegistry;
     IStakeRegistry public stakeRegistryImplementation;
     IIndexRegistry public indexRegistry;

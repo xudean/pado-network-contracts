@@ -3,99 +3,64 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
+import "forge-std/console.sol";
+import "forge-std/Test.sol";
 
 import {Utils} from "../utils/Utils.s.sol";
 import {ExistingDeploymentParser} from "../utils/ExistingDeploymentParser.sol";
-import "forge-std/console.sol";
-
 
 // OpenZeppelin
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../../../contracts/PADORegistryCoordinator.sol";
 
-// EigenLayer contracts
-import {IDelegationManager} from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
-import {PauserRegistry} from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
+import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
-import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
-
-// EigenLayer middleware
-import {IPauserRegistry} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
-import {PADORegistryCoordinator} from "../../../contracts/PADORegistryCoordinator.sol";
-import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
-import {BLSApkRegistry} from "@eigenlayer-middleware/src/BLSApkRegistry.sol";
-import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
-import {IndexRegistry} from "@eigenlayer-middleware/src/IndexRegistry.sol";
-import {IIndexRegistry} from "@eigenlayer-middleware/src/interfaces/IIndexRegistry.sol";
-import {BLSSignatureChecker} from "@eigenlayer-middleware/src/BLSSignatureChecker.sol";
-import {IBLSSignatureChecker} from "@eigenlayer-middleware/src/interfaces/IBLSSignatureChecker.sol";
-import {StakeRegistry} from "@eigenlayer-middleware/src/StakeRegistry.sol";
-import {IStakeRegistry} from "@eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
-import {ServiceManager} from "../../../contracts/ServiceManager.sol";
-import {OperatorStateRetriever} from "@eigenlayer-middleware/src/OperatorStateRetriever.sol";
-import {RewardsCoordinator} from "../../../lib/eigenlayer-middleware/lib/eigenlayer-contracts/src/contracts/core/RewardsCoordinator.sol";
+import "../../../contracts/WorkerMgt.sol";
+import "../../../contracts/FeeMgt.sol";
+import "../../../contracts/DataMgt.sol";
+import "../../../contracts/TaskMgt.sol";
 
 // # To deploy and verify our contract
-// forge script script/deploy/mainnet/Holesky_DeployPADONetworkContracts.s.sol --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
-contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
+// forge script script/deploy/mainnet/Mainnet_DeployPADONetworkContracts.s.sol:Mainnet_DeployPADONetworkContracts --rpc-url $MAINNET_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
+contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
-    string(
-        bytes(
-            "./script/deploy/mainnet/config/eigenlayer_deployment_mainnet.json"
-        )
-    );
-    string public deployConfigPath =
-    string(
-        bytes(
-            "./script/deploy/mainnet/config/middleware_config_mainnet.json"
-        )
-    );
+        string(
+            bytes(
+                "./script/deploy/mainnet/output/1/padonetwork_middleware_deployment_data_mainnet.json"
+            )
+        );
     string public outputPath =
-    string.concat(
-        "script/deploy/mainnet/output/17000/padonetwork_middleware_deployment_data_mainnet.json"
-    );
+        string.concat(
+            "script/deploy/mainnet/output/1/padonetwork_contracts_deployment_data_mainnet.json"
+        );
 
     ProxyAdmin public proxyAdmin;
-    PauserRegistry public pauserRegistry;
     address public networkOwner;
     address public networkUpgrader;
-    address public pauser;
-    uint256 public initialPausedStatus;
 
     // Middleware contracts to deploy
     PADORegistryCoordinator public registryCoordinator;
-    ServiceManager public serviceManager;
-    BLSApkRegistry public blsApkRegistry;
-    StakeRegistry public stakeRegistry;
-    IndexRegistry public indexRegistry;
-    OperatorStateRetriever public operatorStateRetriever;
-
     PADORegistryCoordinator public registryCoordinatorImplementation;
-    StakeRegistry public stakeRegistryImplementation;
-    BLSApkRegistry public blsApkRegistryImplementation;
-    IndexRegistry public indexRegistryImplementation;
-    ServiceManager public serviceManagerImplementation;
+
+    //PADO Network contracts
+    WorkerMgt public workerMgt;
+    WorkerMgt public workerMgtImplementation;
+    FeeMgt public feeMgt;
+    FeeMgt public feeMgtImplementation;
+    DataMgt public dataMgt;
+    DataMgt public dataMgtImplementation;
+    TaskMgt public taskMgt;
+    TaskMgt public taskMgtImplementation;
 
     function run()
-    external
-    returns (
-        PADORegistryCoordinator,
-        ServiceManager,
-        StakeRegistry,
-        BLSApkRegistry,
-        IndexRegistry,
-        OperatorStateRetriever,
-        ProxyAdmin
-    )
+        external
+        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin)
     {
-        console.log("deployer is:%s",msg.sender);
-        // get info on all the already-deployed contracts
-        _parseDeployedContracts(existingDeploymentInfoPath);
+        console.log("deployer is:%s", msg.sender);
 
         // READ JSON CONFIG DATA
-        string memory config_data = vm.readFile(deployConfigPath);
+        string memory config_data = vm.readFile(existingDeploymentInfoPath);
 
         // check that the chainID matches the one in the config
         uint256 currentChainId = block.chainid;
@@ -110,100 +75,75 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         );
 
         // parse the addresses of permissioned roles
-        networkOwner = stdJson.readAddress(config_data, ".permissions.owner");
+        networkOwner = stdJson.readAddress(
+            config_data,
+            ".permissions.networkOwner"
+        );
         networkUpgrader = stdJson.readAddress(
             config_data,
-            ".permissions.upgrader"
-        );
-        pauser = stdJson.readAddress(config_data, ".permissions.pauser");
-        initialPausedStatus = stdJson.readUint(
-            config_data,
-            ".permissions.initialPausedStatus"
+            ".permissions.networkUpgrader"
         );
 
         vm.startBroadcast();
-        (
-            registryCoordinator,
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            operatorStateRetriever,
-            proxyAdmin
-        ) = _deployMiddlewareContracts(
-            delegationManager,
-            avsDirectory,
-            rewardsCoordinator,
-            config_data
-        );
+        _deployPadoNeworkContracts(config_data);
 
         vm.stopBroadcast();
 
-        // sanity checks
-        _verifyContractPointers(
-            blsApkRegistry,
-            serviceManager,
-            registryCoordinator,
-            indexRegistry,
-            stakeRegistry
-        );
-
-        _verifyImplementations();
-
-        _verifyInitalizations(config_data);
-
-        //write output
-        _writeOutput(config_data);
-
-        return (
-            registryCoordinator,
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            operatorStateRetriever,
-            proxyAdmin
-        );
+        return (workerMgt,feeMgt,dataMgt,taskMgt, proxyAdmin);
     }
 
     /**
      * @notice Deploy  middleware contracts
      */
-    function _deployMiddlewareContracts(
-        IDelegationManager delegationManager,
-        IAVSDirectory _avsDirectory,
-        IRewardsCoordinator _rewardsCoordinator,
-        string memory config_data
-    )
-    internal
-    returns (
-        PADORegistryCoordinator,
-        ServiceManager,
-        StakeRegistry,
-        BLSApkRegistry,
-        IndexRegistry,
-        OperatorStateRetriever,
-        ProxyAdmin
-    )
-    {
-        // Deploy proxy admin for ability to upgrade proxy contracts
+    function _deployPadoNeworkContracts(string memory config_data) internal {
         proxyAdmin = new ProxyAdmin();
+        emptyContract = EmptyContract(
+            0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2
+        );
 
-        if (pauser == address(0)) {
-            // Deploy PauserRegistry with msg.sender as the initial pauser
-            address[] memory pausers = new address[](1);
-            pausers[0] = networkOwner;
-            address unpauser = networkOwner;
-            pauserRegistry = new PauserRegistry(pausers, unpauser);
-        } else {
-            pauserRegistry = PauserRegistry(pauser);
-        }
-
-        /**
-         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
-         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
-         */
+        console.log("proxyAdmin");
         registryCoordinator = PADORegistryCoordinator(
+            stdJson.readAddress(config_data, ".addresses.registryCoordinator")
+        );
+        console.log("registryCoordinator is %s",address(registryCoordinator));
+        //workerMgt
+        workerMgt = WorkerMgt(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+        console.log("workerMgt proxy deployed");
+
+        //feeMgt
+        feeMgt = FeeMgt(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+        console.log("feeMgt proxy deployed");
+
+        //dataMgt
+        dataMgt = DataMgt(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+        console.log("dataMgt proxy deployed");
+
+        //taskMgt
+        taskMgt = TaskMgt(
             address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
@@ -213,489 +153,96 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             )
         );
 
-        stakeRegistry = StakeRegistry(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
+        console.log("taskMgt proxy deployed");
 
-        indexRegistry = IndexRegistry(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-
-        blsApkRegistry = BLSApkRegistry(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-
-        serviceManager = ServiceManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-
-        // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        stakeRegistryImplementation = new StakeRegistry(
-            registryCoordinator,
-            delegationManager
-        );
-        blsApkRegistryImplementation = new BLSApkRegistry(
-            registryCoordinator
-        );
-        indexRegistryImplementation = new IndexRegistry(registryCoordinator);
-        serviceManagerImplementation = new ServiceManager(
-            _avsDirectory,
-            rewardsCoordinator,
-            registryCoordinator,
-            stakeRegistry
-        );
-
-        // Third, upgrade the proxy contracts to point to the implementations
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))),
-            address(stakeRegistryImplementation)
-        );
-
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))),
-            address(blsApkRegistryImplementation)
-        );
-
-        proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))),
-            address(indexRegistryImplementation)
-        );
+        workerMgtImplementation = new WorkerMgt();
+        feeMgtImplementation = new FeeMgt();
+        dataMgtImplementation = new DataMgt();
+        taskMgtImplementation = new TaskMgt();
+        console.log("implementation proxy deployed");
 
         proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(serviceManager))),
-            address(serviceManagerImplementation),
+            TransparentUpgradeableProxy(payable(address(workerMgt))),
+            address(workerMgtImplementation),
             abi.encodeWithSelector(
-                ServiceManager.initialize.selector,
-                networkOwner // _initialOwner
+                WorkerMgt.initialize.selector,
+                registryCoordinator,
+                networkOwner
             )
         );
+        console.log("upgrade workerMgt");
 
-        registryCoordinatorImplementation = new PADORegistryCoordinator(
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(feeMgt))),
+            address(feeMgtImplementation),
+            abi.encodeWithSelector(FeeMgt.initialize.selector, 0)
         );
 
-        _initRegistryCoordinator(
-            proxyAdmin,
-            registryCoordinator,
-            registryCoordinatorImplementation,
-            pauserRegistry,
-            config_data
+        console.log("upgrade feeMgt");
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(dataMgt))),
+            address(dataMgtImplementation),
+            abi.encodeWithSelector(DataMgt.initialize.selector)
         );
+        console.log("upgrade dataMgt");
 
-        operatorStateRetriever = new OperatorStateRetriever();
-
-        // transfer ownership of proxy admin to upgrader
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(taskMgt))),
+            address(taskMgtImplementation),
+            abi.encodeWithSelector(TaskMgt.initialize.selector, dataMgt, feeMgt)
+        );
+        console.log("upgrade taskMgt");
+        console.log("registryCoordinator is:%s,owner is:%s",address(registryCoordinator),registryCoordinator.owner());
+        console.log("workerMgt is:%s",address(workerMgt));
+        registryCoordinator.setWorkerMgt(workerMgt);
         proxyAdmin.transferOwnership(networkUpgrader);
+        console.log("networkUpgrader is:%s", address(networkUpgrader));
 
-        return (
-            registryCoordinator,
-            serviceManager,
-            stakeRegistry,
-            blsApkRegistry,
-            indexRegistry,
-            operatorStateRetriever,
-            proxyAdmin
-        );
-    }
-
-    function _initRegistryCoordinator(
-        ProxyAdmin _proxyAdmin,
-        IRegistryCoordinator _registryCoordinator,
-        PADORegistryCoordinator _registryCoordinatorImplementation,
-        PauserRegistry _pauserRegistry,
-        string memory config_data
-    ) internal {
-        // parse initalization params and permissions from config data
-        (
-            uint96[] memory minimumStakeForQuourm,
-            IStakeRegistry.StrategyParams[][]
-            memory strategyAndWeightingMultipliers
-        ) = _parseStakeRegistryParams(config_data);
-        (
-            IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams,
-            address churner,
-            address ejector
-        ) = _parseRegistryCoordinatorParams(config_data);
-
-        _proxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(_registryCoordinator))),
-            address(_registryCoordinatorImplementation),
-            abi.encodeWithSelector(
-                PADORegistryCoordinator.initialize.selector,
-                networkOwner,
-                churner,
-                ejector,
-                _pauserRegistry,
-                initialPausedStatus,
-                operatorSetParams,
-                minimumStakeForQuourm,
-                strategyAndWeightingMultipliers
-            )
-        );
-    }
-
-    function _parseStakeRegistryParams(
-        string memory config_data
-    )
-    internal
-    pure
-    returns (
-        uint96[] memory minimumStakeForQuourm,
-        IStakeRegistry.StrategyParams[][]
-        memory strategyAndWeightingMultipliers
-    )
-    {
-        bytes memory stakesConfigsRaw = stdJson.parseRaw(
-            config_data,
-            ".minimumStakes"
-        );
-        minimumStakeForQuourm = abi.decode(stakesConfigsRaw, (uint96[]));
-
-        bytes memory strategyConfigsRaw = stdJson.parseRaw(
-            config_data,
-            ".strategyWeights"
-        );
-        strategyAndWeightingMultipliers = abi.decode(
-            strategyConfigsRaw,
-            (IStakeRegistry.StrategyParams[][])
-        );
-    }
-
-    function _parseRegistryCoordinatorParams(
-        string memory config_data
-    )
-    internal
-    pure
-    returns (
-        IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams,
-        address churner,
-        address ejector
-    )
-    {
-        bytes memory operatorConfigsRaw = stdJson.parseRaw(
-            config_data,
-            ".operatorSetParams"
-        );
-        operatorSetParams = abi.decode(
-            operatorConfigsRaw,
-            (IRegistryCoordinator.OperatorSetParam[])
-        );
-
-        churner = stdJson.readAddress(config_data, ".permissions.churner");
-        ejector = stdJson.readAddress(config_data, ".permissions.ejector");
-    }
-
-    function _verifyContractPointers(
-        BLSApkRegistry _apkRegistry,
-        ServiceManager _serviceManager,
-        PADORegistryCoordinator _registryCoordinator,
-        IndexRegistry _indexRegistry,
-        StakeRegistry _stakeRegistry
-    ) internal view {
-        require(
-            address(_apkRegistry.registryCoordinator()) ==
-            address(registryCoordinator),
-            "blsApkRegistry.registryCoordinator() != registryCoordinator"
-        );
-
-        require(
-            address(_indexRegistry.registryCoordinator()) ==
-            address(registryCoordinator),
-            "indexRegistry.registryCoordinator() != registryCoordinator"
-        );
-
-        require(
-            address(_stakeRegistry.registryCoordinator()) ==
-            address(registryCoordinator),
-            "stakeRegistry.registryCoordinator() != registryCoordinator"
-        );
-        require(
-            address(_stakeRegistry.delegation()) == address(delegationManager),
-            "stakeRegistry.delegationManager() != delegation"
-        );
-
-        // TODO: add this checks once we update the service manager properties to be public
-        // require(address(_serviceManager.registryCoordinator()) == address(registryCoordinator), "_serviceManager.registryCoordinator() != registryCoordinator");
-        // require(address(_serviceManager.stakeRegistry()) == address(stakeRegistry), "_serviceManager.stakeRegistry() != stakeRegistry");
-
-        require(
-            address(_registryCoordinator.serviceManager()) ==
-            address(_serviceManager),
-            "registryCoordinator.serviceManager() != _serviceManager"
-        );
-        require(
-            address(_registryCoordinator.stakeRegistry()) ==
-            address(stakeRegistry),
-            "registryCoordinator.stakeRegistry() != stakeRegistry"
-        );
-        require(
-            address(_registryCoordinator.blsApkRegistry()) ==
-            address(_apkRegistry),
-            "registryCoordinator.blsApkRegistry() != _apkRegistry"
-        );
-        require(
-            address(_registryCoordinator.indexRegistry()) ==
-            address(indexRegistry),
-            "registryCoordinator.indexRegistry() != indexRegistry"
-        );
-    }
-
-    function _verifyImplementations() internal view {
-        require(
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(serviceManager)))
-            ) == address(serviceManagerImplementation),
-            "ServiceManager: implementation set incorrectly"
-        );
-        require(
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(
-                    payable(address(registryCoordinator))
-                )
-            ) == address(registryCoordinatorImplementation),
-            "registryCoordinator: implementation set incorrectly"
-        );
-        require(
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(blsApkRegistry)))
-            ) == address(blsApkRegistryImplementation),
-            "blsApkRegistry: implementation set incorrectly"
-        );
-        require(
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(indexRegistry)))
-            ) == address(indexRegistryImplementation),
-            "indexRegistry: implementation set incorrectly"
-        );
-        require(
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(stakeRegistry)))
-            ) == address(stakeRegistryImplementation),
-            "stakeRegistry: implementation set incorrectly"
-        );
-    }
-
-    function _verifyInitalizations(string memory config_data) internal {
-        (
-            uint96[] memory minimumStakeForQuourm,
-            IStakeRegistry.StrategyParams[][]
-            memory strategyAndWeightingMultipliers
-        ) = _parseStakeRegistryParams(config_data);
-        (
-            IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams,
-            address churner,
-            address ejector
-        ) = _parseRegistryCoordinatorParams(config_data);
-
-        require(
-            serviceManager.owner() == networkOwner,
-            "serviceManager.owner() != networkOwner"
-        );
-
-        require(
-            registryCoordinator.owner() == networkOwner,
-            "registryCoordinator.owner() != networkOwner"
-        );
-        require(
-            registryCoordinator.churnApprover() == churner,
-            "registryCoordinator.churner() != churner"
-        );
-        require(
-            registryCoordinator.ejector() == ejector,
-            "registryCoordinator.ejector() != ejector"
-        );
-        require(
-            registryCoordinator.pauserRegistry() ==
-            IPauserRegistry(pauserRegistry),
-            "registryCoordinator: pauser registry not set correctly"
-        );
-        require(
-            registryCoordinator.paused() == initialPausedStatus,
-            "registryCoordinator: init paused status set incorrectly"
-        );
-
-        for (uint8 i = 0; i < operatorSetParams.length; ++i) {
-            require(
-                keccak256(
-                    abi.encode(registryCoordinator.getOperatorSetParams(i))
-                ) == keccak256(abi.encode(operatorSetParams[i])),
-                "registryCoordinator.operatorSetParams != operatorSetParams"
-            );
-        }
-
-        for (uint8 i = 0; i < minimumStakeForQuourm.length; ++i) {
-            require(
-                stakeRegistry.minimumStakeForQuorum(i) ==
-                minimumStakeForQuourm[i],
-                "stakeRegistry.minimumStakeForQuourm != minimumStakeForQuourm"
-            );
-        }
-
-        for (uint8 i = 0; i < strategyAndWeightingMultipliers.length; ++i) {
-            for (
-                uint8 j = 0;
-                j < strategyAndWeightingMultipliers[i].length;
-                ++j
-            ) {
-                IStakeRegistry.StrategyParams
-                memory strategyParams = stakeRegistry.strategyParamsByIndex(
-                    i,
-                    j
-                );
-                require(
-                    address(strategyParams.strategy) ==
-                    address(strategyAndWeightingMultipliers[i][j].strategy),
-                    "stakeRegistry.strategyAndWeightingMultipliers != strategyAndWeightingMultipliers"
-                );
-                require(
-                    strategyParams.multiplier ==
-                    strategyAndWeightingMultipliers[i][j].multiplier,
-                    "stakeRegistry.strategyAndWeightingMultipliers != strategyAndWeightingMultipliers"
-                );
-            }
-        }
-
-        require(
-            operatorSetParams.length ==
-            strategyAndWeightingMultipliers.length &&
-            operatorSetParams.length == minimumStakeForQuourm.length,
-            "operatorSetParams, strategyAndWeightingMultipliers, and minimumStakeForQuourm must be the same length"
-        );
+        _writeOutput(config_data);
     }
 
     function _writeOutput(string memory config_data) internal {
         string memory parent_object = "parent object";
-
         string memory deployed_addresses = "addresses";
         vm.serializeAddress(
             deployed_addresses,
-            "proxyAdmin",
-            address(proxyAdmin)
+            "workerMgt",
+            address(workerMgt)
         );
         vm.serializeAddress(
             deployed_addresses,
-            "operatorStateRetriever",
-            address(operatorStateRetriever)
+            "workerMgtImplementation",
+            address(workerMgtImplementation)
         );
+
+        vm.serializeAddress(deployed_addresses, "feeMgt", address(feeMgt));
         vm.serializeAddress(
             deployed_addresses,
-            "serviceManager",
-            address(serviceManager)
+            "feeMgtImplementation",
+            address(feeMgtImplementation)
         );
+
+        vm.serializeAddress(deployed_addresses, "dataMgt", address(dataMgt));
         vm.serializeAddress(
             deployed_addresses,
-            "serviceManagerImplementation",
-            address(serviceManagerImplementation)
+            "dataMgtImplementation",
+            address(dataMgtImplementation)
         );
-        vm.serializeAddress(
-            deployed_addresses,
-            "registryCoordinator",
-            address(registryCoordinator)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "registryCoordinatorImplementation",
-            address(registryCoordinatorImplementation)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "blsApkRegistry",
-            address(blsApkRegistry)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "blsApkRegistryImplementation",
-            address(blsApkRegistryImplementation)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "indexRegistry",
-            address(indexRegistry)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "indexRegistryImplementation",
-            address(indexRegistryImplementation)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "stakeRegistry",
-            address(stakeRegistry)
-        );
+
+        vm.serializeAddress(deployed_addresses, "taskMgt", address(taskMgt));
+        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
+
         string memory deployed_addresses_output = vm.serializeAddress(
             deployed_addresses,
-            "stakeRegistryImplementation",
-            address(stakeRegistryImplementation)
+            "taskMgtImplementation",
+            address(taskMgtImplementation)
         );
 
-        string memory chain_info = "chainInfo";
-        vm.serializeUint(chain_info, "deploymentBlock", block.number);
-        string memory chain_info_output = vm.serializeUint(
-            chain_info,
-            "chainId",
-            block.chainid
-        );
-
-        address churner = stdJson.readAddress(
-            config_data,
-            ".permissions.churner"
-        );
-        address ejector = stdJson.readAddress(
-            config_data,
-            ".permissions.ejector"
-        );
-        string memory permissions = "permissions";
-        vm.serializeAddress(permissions, "networkOwner", networkOwner);
-        vm.serializeAddress(permissions, "networkUpgrader", networkUpgrader);
-        vm.serializeAddress(permissions, "churner", churner);
-        vm.serializeAddress(
-            permissions,
-            "pauserRegistry",
-            address(pauserRegistry)
-        );
-        string memory permissions_output = vm.serializeAddress(
-            permissions,
-            "ejector",
-            ejector
-        );
-
-        vm.serializeString(parent_object, chain_info, chain_info_output);
-        vm.serializeString(
+        string memory finalJson = vm.serializeString(
             parent_object,
             deployed_addresses,
             deployed_addresses_output
-        );
-        string memory finalJson = vm.serializeString(
-            parent_object,
-            permissions,
-            permissions_output
         );
         vm.writeJson(finalJson, outputPath);
     }

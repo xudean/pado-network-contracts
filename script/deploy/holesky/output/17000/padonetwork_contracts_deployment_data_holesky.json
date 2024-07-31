@@ -1,0 +1,13 @@
+{
+  "addresses": {
+    "dataMgt": "0x8A20dD20df6191381E01F3459AAb831AbE9C98f8",
+    "dataMgtImplementation": "0x3c0b3b4dD5A15e6850cD73c47FE3C51Dd957B28B",
+    "feeMgt": "0x303F76838D3B1A10673Fad5Af6Af0F732d0E5579",
+    "feeMgtImplementation": "0xD05dC182F9E420B71a037e33711910CFd060d6F6",
+    "proxyAdmin": "0x95449DBd5DdA47C839e674Ed067B89BCfd8CABfe",
+    "taskMgt": "0xf0bd9789823Ba073a1CAE2FFE90e80e012b04B59",
+    "taskMgtImplementation": "0x5F2f1c996Dff490009Cadd223a30894128EA9a15",
+    "workerMgt": "0xFed6A440537E1013BCDa30277A4158b3F475896A",
+    "workerMgtImplementation": "0x5a91D8870888E9e37510724c39A97f6Fc6a965fe"
+  }
+}
