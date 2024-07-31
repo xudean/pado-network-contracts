@@ -4,12 +4,15 @@ pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
+import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {Worker} from "./types/Common.sol";
 /**
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
  */
 contract DataMgt is IDataMgt, OwnableUpgradeable {
     uint256 private _registryCount;
+    IWorkerMgt private _workerMgt;
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
 
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
@@ -19,7 +22,8 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize() external initializer {
+    function initialize(IWorkerMgt workerMgt) external initializer {
+        _workerMgt = workerMgt;
         _registryCount = 0;
         __Ownable_init();
     }
@@ -35,19 +39,19 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         dataId = keccak256(abi.encode(encryptionSchema, _registryCount));
         _registryCount++;
 
-        // TODO
-        publicKeys = new bytes[](3);
-        publicKeys[0] = bytes("test 0");
-        publicKeys[1] = bytes("test 1");
-        publicKeys[2] = bytes("test 2");
-
-        address worker_address_0 = address(uint160(uint256(keccak256("worker 0"))));
-        address worker_address_1 = address(uint160(uint256(keccak256("worker 1"))));
-        address worker_address_2 = address(uint160(uint256(keccak256("worker 2"))));
-        bytes32[] memory workerIds = new bytes32[](3);
-        workerIds[0] = keccak256(abi.encode(worker_address_0));
-        workerIds[1] = keccak256(abi.encode(worker_address_1));
-        workerIds[2] = keccak256(abi.encode(worker_address_2));
+        bool res = _workerMgt.selectMultiplePublicKeyWorkers(
+            dataId,
+            encryptionSchema.t,
+            encryptionSchema.n
+        );
+        require(res, "select multiple public key workers error");
+        bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
+        require(workerIds.length == encryptionSchema.n, "get multiple public key workers error");
+        
+        publicKeys = new bytes[](workerIds.length);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            publicKeys[i] = _workerMgt.getWorkerById(workerIds[i]).publicKey;
+        }
 
         DataInfo memory dataInfo = DataInfo({
                 dataId: dataId,

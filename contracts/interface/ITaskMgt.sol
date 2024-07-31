@@ -120,10 +120,11 @@ interface ITaskMgt {
     /**
      * @notice Worker report the computing result.
      * @param taskId The task id to which the result is associated.
+     * @param workerId The worker id.
      * @param result The computing result content including zk proof.
      * @return True if reporting is successful.
      */
-    function reportResult(bytes32 taskId, bytes calldata result) external returns (bool);
+    function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool);
 
     /**
      * @notice Get the tasks that need to be run by Workers.

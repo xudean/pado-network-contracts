@@ -103,13 +103,10 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         test_submitTask();
         assertEq(taskMgt.getPendingTasks().length, 1);
 
-        address[] memory workerAddresses = new address[](3);
-        workerAddresses[0] = worker_address_0;
-        workerAddresses[1] = worker_address_1;
-        workerAddresses[2] = worker_address_2;
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
 
-        for (uint256 i = 0; i < 3; i++) {
-            Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(keccak256(abi.encode(workerAddresses[i])));
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(workerIds[i]);
             assertEq(tasks.length, 1);
             assertEq(tasks[0].status == TaskStatus.PENDING, true);
         }
@@ -117,12 +114,23 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function test_reportResult() public {
         test_submitTask();
-        vm.prank(worker_address_0);
-        taskMgt.reportResult(taskId, bytes("task result"));
-        vm.prank(worker_address_1);
-        taskMgt.reportResult(taskId, bytes("task result"));
-        vm.prank(worker_address_2);
-        taskMgt.reportResult(taskId, bytes("task result"));
+
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        require(workerIds.length == workerOwners.length, "the length of worker id and worker owner not equal");
+
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            vm.prank(workerOwners[i]);
+            taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
+        }
+    }
+
+    function _getWorkerInfoByDataId(bytes32 dataId) internal returns (bytes32[] memory workerIds, address[] memory workerOwners) {
+        workerIds = dataMgt.getDataById(dataId).workerIds;
+        workerOwners = new address[](workerIds.length);
+
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            workerOwners[i] = workerMgt.getWorkerById(workerIds[i]).owner;
+        }
     }
 
     function test_getCompletedTasks() public {
@@ -144,11 +152,10 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         assertEq(dataProviderBalance, dataInfo.priceInfo.price, "data provider balance error");
         sumBalance += dataProviderBalance;
 
-        bytes32[] memory workerIds = dataInfo.workerIds;
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
         for (uint256 i = 0; i < workerIds.length; i++) {
-            address workerAddress = address(uint160(uint256(workerIds[i])));
-            uint256 workerBalance = _getBalance(TOKEN_SYMBOL, workerAddress);
-            assertEq(workerBalance, feeInfo.computingPrice);
+            uint256 workerBalance = _getBalance(TOKEN_SYMBOL, workerOwners[i]);
+            assertEq(workerBalance, feeInfo.computingPrice, "workerBalance not equal computingPrice");
             sumBalance += workerBalance;
         }
         uint256 lockedAmount = dataInfo.priceInfo.price + workerIds.length * feeInfo.computingPrice;

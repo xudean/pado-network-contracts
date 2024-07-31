@@ -6,6 +6,8 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo} from "./interface/ITaskMgt.sol";
 import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
+import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {Worker} from "./types/Common.sol";
 /**
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
@@ -13,6 +15,7 @@ import {IFeeMgt} from "./interface/IFeeMgt.sol";
 contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     IDataMgt public _dataMgt;
     IFeeMgt public _feeMgt;
+    IWorkerMgt public _workerMgt;
 
     mapping(bytes32 taskId => Task task) private _allTasks;
     mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
@@ -26,9 +29,10 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         _disableInitializers();
     }
 
-    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt) public initializer {
+    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt, IWorkerMgt workerMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
+        _workerMgt = workerMgt;
         _taskCount = 0;
         __Ownable_init();
     }
@@ -56,12 +60,13 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         return bytes32(0);
     }
 
-    function getWorkerOwners(bytes32[] memory workerIds) internal pure returns (address[] memory) {
+    function _getWorkerOwners(bytes32[] memory workerIds) internal view returns (address[] memory) {
         uint256 workerIdLength = workerIds.length;
 
         address[] memory workerOwners = new address[](workerIdLength);
         for (uint256 i = 0; i < workerIdLength; i++) {
-            workerOwners[i] = address(uint160(uint256(workerIds[i])));
+            Worker memory worker = _workerMgt.getWorkerById(workerIds[i]);
+            workerOwners[i] = worker.owner;
         }
         return workerOwners;
     }
@@ -184,7 +189,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
             task.status,
             task.submitter,
             task.tokenSymbol,
-            getWorkerOwners(task.computingInfo.workerIds),
+            _getWorkerOwners(task.computingInfo.workerIds),
             dataInfo.priceInfo.price,
             dataProviders
         );
@@ -194,12 +199,13 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     /**
      * @notice Worker report the computing result.
      * @param taskId The task id to which the result is associated.
+     * @param workerId The worker id.
      * @param result The computing result content including zk proof.
      * @return True if reporting is successful.
      */
-    function reportResult(bytes32 taskId, bytes calldata result) external returns (bool) {
-        // TODO
-        bytes32 workerId = keccak256(abi.encode(msg.sender));
+    function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
+        Worker memory worker = _workerMgt.getWorkerById(workerId);
+        require(msg.sender == worker.owner, "worker id and worker owner error");
         Task storage task = _allTasks[taskId];
         require(task.taskId == taskId, "the task does not exist");
 
