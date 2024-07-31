@@ -15,9 +15,11 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {TestERC20} from "./TestERC20.sol";
+import {EmptyContract} from "./EmptyContract.sol";
 
 contract MockDeployer is Test {
     ProxyAdmin proxyAdmin;
+    EmptyContract emptyContract;
     IDataMgt dataMgt;
     IFeeMgt feeMgt;
     ITaskMgt taskMgt;
@@ -41,17 +43,14 @@ contract MockDeployer is Test {
 
     function _deployAll() internal {
         proxyAdmin = new ProxyAdmin();
+        emptyContract = new EmptyContract();
 
-        FeeMgt feeMgtImplementation = new FeeMgt();
         feeMgt = IFeeMgt(
             address(
                 new TransparentUpgradeableProxy(
-                    address(feeMgtImplementation),
+                    address(emptyContract),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        FeeMgt.initialize.selector,
-                        1
-                    )
+                    ""
                 )
             )
         );
@@ -83,6 +82,16 @@ contract MockDeployer is Test {
                 )
             )
         );
+
+        IFeeMgt feeMgtImplementation = new FeeMgt(taskMgt);
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(feeMgt))),
+            address(feeMgtImplementation)
+        );
+
+        FeeMgt(address(feeMgt)).initialize(1);
+
+        feeMgt.setTaskMgt(taskMgt);
 
         _addFeeTokens();
     }

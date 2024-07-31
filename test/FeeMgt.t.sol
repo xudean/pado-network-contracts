@@ -63,6 +63,10 @@ contract FeeMgtTest is MockDeployer {
     }
 
     function test_transferToken_ETH() public {
+        // payable(address(taskMgt)).transfer(50);
+        taskMgt.receiveETH{value: 50}();
+
+        vm.prank(address(taskMgt));
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
         uint256 balance = address(feeMgt).balance;
         assertEq(balance, 5, "balance error");
@@ -85,7 +89,7 @@ contract FeeMgtTest is MockDeployer {
         uint256 spenderAllowance = erc20.allowance(msg.sender, address(feeMgt));
         assertEq(spenderAllowance, 5, "spenderAllowance error");
         
-
+        vm.prank(address(taskMgt));
         feeMgt.transferToken(msg.sender, "TEST", 5);
         uint256 balance = erc20.balanceOf(address(feeMgt));
         assertEq(balance, 5, "balance error");
@@ -142,6 +146,7 @@ contract FeeMgtTest is MockDeployer {
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        vm.prank(address(taskMgt));
         feeMgt.lock(
             info.taskId,
             info.submitter,
@@ -168,6 +173,8 @@ contract FeeMgtTest is MockDeployer {
         uint256 oldBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+
+        vm.prank(address(taskMgt));
         feeMgt.settle(
             info.taskId,
             TaskStatus.COMPLETED,

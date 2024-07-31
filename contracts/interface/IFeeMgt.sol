@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {TaskStatus} from "./ITaskMgt.sol";
+import {TaskStatus, ITaskMgt} from "./ITaskMgt.sol";
 /**
  * @notice A struct representing a fee token symbol and address.
  */
@@ -48,6 +48,12 @@ interface IFeeMgt {
         bytes32 indexed taskId,
         string indexed tokenSymbol,
         uint256 indexed amount
+    );
+
+    // emit in setTaskMgt
+    event TaskMgtUpdated(
+        address from,
+        address to
     );
 
     /**
@@ -133,4 +139,10 @@ interface IFeeMgt {
      * @return Allowance for the data user
      */
     function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
+
+    /**
+     * @notice Set TaskMgt.
+     * @param taskMgt The TaskMgt
+     */
+    function setTaskMgt(ITaskMgt taskMgt) external;
 }

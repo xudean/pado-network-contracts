@@ -21,6 +21,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
 
     function initialize() external initializer {
         _registryCount = 0;
+        __Ownable_init();
     }
 
     /**

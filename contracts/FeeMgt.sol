@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
-import {TaskStatus} from "./interface/ITaskMgt.sol";
+import {ITaskMgt, TaskStatus} from "./interface/ITaskMgt.sol";
 
 
 /**
@@ -13,6 +13,7 @@ import {TaskStatus} from "./interface/ITaskMgt.sol";
  * @notice FeeMgt - Fee Management Contract.
  */
 contract FeeMgt is IFeeMgt, OwnableUpgradeable {
+    ITaskMgt private _taskMgt;
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
     mapping(string symbol => uint256 computingFee) private _computingPriceForSymbol;
 
@@ -22,7 +23,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(ITaskMgt taskMgt) {
+        _taskMgt = taskMgt;
         _disableInitializers();
     }
 
@@ -41,7 +43,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         address from,
         string calldata tokenSymbol,
         uint256 amount
-    ) payable external {
+    ) payable external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "not supported token");
         if (_isETH(tokenSymbol)) {
             require(amount == msg.value, "numTokens is not correct");
@@ -73,7 +75,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         address submitter,
         string calldata tokenSymbol,
         uint256 toLockAmount 
-    ) external returns (bool) {
+    ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
 
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
@@ -107,7 +109,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
-    ) external returns (bool) {
+    ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
         uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
         require(computingPrice > 0, "computing price is not set");
@@ -154,7 +156,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param computingPrice The computing price for the token.
      * @return Returns true if the adding is successful.
      */
-    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool) {
+    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {
         return _addFeeToken(tokenSymbol, tokenAddress, computingPrice);
     }
 
@@ -255,7 +257,6 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
-     * @return Returns true if the settlement is successful.
      */
     function _settle(
         bytes32 taskId,
@@ -264,7 +265,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         address[] memory workerOwners,
         uint256 dataPrice,
         address[] memory dataProviders
-    ) internal returns (bool) {
+    ) internal {
         uint256 settledFee = 0;
         if (_isETH(tokenSymbol)) {
             for (uint256 i = 0; i < workerOwners.length; i++) {
@@ -292,5 +293,20 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             }
         }
         emit FeeSettled(taskId, tokenSymbol, settledFee);
+    }
+
+    /**
+     * @notice Set TaskMgt.
+     * @param taskMgt The TaskMgt
+     */
+    function setTaskMgt(ITaskMgt taskMgt) external onlyOwner{
+        ITaskMgt oldTaskMgt = _taskMgt;
+        _taskMgt = taskMgt;
+        emit TaskMgtUpdated(address(oldTaskMgt), address(_taskMgt));
+    }
+
+    modifier onlyTaskMgt() {
+        require(msg.sender == address(_taskMgt), "only task mgt allowed to call");
+        _;
     }
 }
