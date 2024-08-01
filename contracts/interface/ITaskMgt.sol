@@ -76,7 +76,6 @@ interface ITaskMgt {
 
     // emit when task completed
     event TaskCompleted(bytes32 indexed taskId);
-    function receiveETH() payable external;
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
      * @param taskType The type of the task.

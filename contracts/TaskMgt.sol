@@ -37,7 +37,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         __Ownable_init();
     }
 
-    function receiveETH() payable external {
+    receive() payable external {
     }
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
