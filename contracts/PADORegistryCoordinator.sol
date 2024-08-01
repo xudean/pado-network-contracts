@@ -18,10 +18,7 @@ contract PADORegistryCoordinator is RegistryCoordinator {
     IWorkerMgt public workerMgt;
 
     modifier onlyWorkerMgt() {
-        require(
-            msg.sender == address(workerMgt),
-            "Only workerMgt"
-        );
+        require(msg.sender == address(workerMgt), "Only workerMgt");
         _;
     }
 
@@ -108,7 +105,8 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         onlyWorkerMgt
         onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
     {
-        super.registerOperator(
+        this.registerOperator(
+            msg.sender,
             quorumNumbers,
             socket,
             params,
@@ -116,4 +114,64 @@ contract PADORegistryCoordinator is RegistryCoordinator {
         );
     }
 
+    /**
+     * @notice Registers a worker with the registry coordinator.
+     * @param operatorAddr address of worker.
+     * @param quorumNumbers The quorum numbers associated with the worker.
+     * @param socket The socket address of the worker.
+     * @param params The parameters for registering the worker's BLS public key.
+     * @param operatorSignature The signature of the operator.
+     */
+    function registerOperator(
+        address operatorAddr,
+        bytes calldata quorumNumbers,
+        string calldata socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
+    {
+        super.registerOperator(
+            operatorAddr,
+            quorumNumbers,
+            socket,
+            params,
+            operatorSignature
+        );
+    }
+
+    /**
+     * @notice Deregisters the caller from one or more quorums
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being deregistered from
+     */
+    function deregisterOperator(
+        bytes calldata quorumNumbers
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR)
+    {
+        this.deregisterOperator(msg.sender, quorumNumbers);
+    }
+
+    /**
+     * @notice Deregisters the caller from one or more quorums
+     * @param operatorAddr is the address of operator
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being deregistered from
+     */
+    function deregisterOperator(
+        address operatorAddr,
+        bytes calldata quorumNumbers
+    )
+        public
+        override
+        onlyWorkerMgt
+        onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR)
+    {
+        super.deregisterOperator(operatorAddr, quorumNumbers);
+    }
 }
