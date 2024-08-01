@@ -6,7 +6,8 @@ import {Test} from "forge-std/Test.sol";
 import {DataMgt} from "../../contracts/DataMgt.sol";
 import {TaskMgt} from "../../contracts/TaskMgt.sol";
 import {FeeMgt} from "../../contracts/FeeMgt.sol";
-import {WorkerMgtMock} from "./WorkerMgtMock.sol";
+// import {WorkerMgtMock} from "./WorkerMgtMock.sol";
+import {WorkerMgt} from "../../contracts/WorkerMgt.sol";
 
 import {IDataMgt} from "../../contracts/interface/IDataMgt.sol";
 import {ITaskMgt} from "../../contracts/interface/ITaskMgt.sol";
@@ -19,6 +20,8 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {TestERC20} from "./TestERC20.sol";
 import {EmptyContract} from "./EmptyContract.sol";
 import "../../contracts/PADORegistryCoordinator.sol";
+// import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
+import {RegistryCoordinatorMock} from "./RegistryCoordinatorMock.sol";
 
 contract MockDeployer is Test {
     ProxyAdmin proxyAdmin;
@@ -54,9 +57,14 @@ contract MockDeployer is Test {
         taskTypes[0] = 1;
 
         vm.prank(address(uint160(uint256(keccak256(bytes(name))))));
-        workerMgt.register(name, "test", taskTypes, publicKeys, 0);
-    }
+        // workerMgt.register(name, "test", taskTypes, publicKeys, 0);
 
+        bytes memory quorumNumbers = new bytes(1);
+        string memory socket = "";
+        IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
+        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        workerMgt.registerEigenOperator(taskTypes, publicKeys, quorumNumbers, socket, publicKeyParams, signature);
+    }
 
     function _addWorkers() private {
         _addOneWorker("worker 0");
@@ -70,14 +78,30 @@ contract MockDeployer is Test {
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
-        WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
-        workerMgt = WorkerMgtMock(
+        // WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
+        // workerMgt = WorkerMgtMock(
+        //     address(
+        //         new TransparentUpgradeableProxy(
+        //             address(workerMgtImplementation),
+        //             address(proxyAdmin),
+        //             abi.encodeWithSelector(
+        //                 WorkerMgtMock.initialize.selector
+        //             )
+        //         )
+        //     )
+        // );
+
+        IRegistryCoordinator registryCoordinator = new RegistryCoordinatorMock();
+        WorkerMgt workerMgtImplementation = new WorkerMgt();
+        workerMgt = WorkerMgt(
             address(
                 new TransparentUpgradeableProxy(
                     address(workerMgtImplementation),
                     address(proxyAdmin),
                     abi.encodeWithSelector(
-                        WorkerMgtMock.initialize.selector
+                        WorkerMgt.initialize.selector,
+                        registryCoordinator,
+                        address(this)
                     )
                 )
             )
