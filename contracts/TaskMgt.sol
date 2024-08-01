@@ -37,8 +37,8 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         __Ownable_init();
     }
 
-    receive() payable external {
-    }
+    receive() payable external {}
+
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
      * @param taskType The type of the task.
@@ -56,9 +56,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         TaskDataInfoRequest calldata dataInfoRequest,
         ComputingInfoRequest calldata computingInfoRequest,
         bytes calldata code
-    ) external payable returns (bytes32) {
-        return bytes32(0);
-    }
+    ) external payable returns (bytes32) {}
 
     function _getWorkerOwners(bytes32[] memory workerIds) internal view returns (address[] memory) {
         uint256 workerIdLength = workerIds.length;
@@ -146,9 +144,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param data The content of the data can be the transaction ID of the storage chain.
      * @return True if submission is successful.
      */
-    function submitTaskData(bytes32 taskId, bytes calldata data) external returns (bool) {
-        return false;
-    }
+    function submitTaskData(bytes32 taskId, bytes calldata data) external returns (bool) {}
 
     /**
      * @notice find the index of an element in an array
@@ -289,9 +285,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param dataVerifier The data verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setDataVerifier(uint32 taskType, address dataVerifier) external onlyOwner returns (bool) {
-        return true;
-    }
+    function setDataVerifier(uint32 taskType, address dataVerifier) external onlyOwner returns (bool) {}
 
     /**
      * @notice Set a result verification contract of a task type.
@@ -299,7 +293,5 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param resultVerifier The result verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setResultVerifier(uint32 taskType, address resultVerifier) external onlyOwner returns (bool) {
-        return true;
-    }
+    function setResultVerifier(uint32 taskType, address resultVerifier) external onlyOwner returns (bool) {}
 }

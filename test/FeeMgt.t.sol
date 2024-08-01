@@ -64,7 +64,8 @@ contract FeeMgtTest is MockDeployer {
 
     function test_transferToken_ETH() public {
         // payable(address(taskMgt)).transfer(50);
-        payable(address(taskMgt)).call{value: 50}(new bytes(0));
+        (bool b, ) = payable(address(taskMgt)).call{value: 50}(new bytes(0));
+        require(b, "transfer error");
 
         vm.prank(address(taskMgt));
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);

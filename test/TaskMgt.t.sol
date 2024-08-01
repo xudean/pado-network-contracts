@@ -103,7 +103,7 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         test_submitTask();
         assertEq(taskMgt.getPendingTasks().length, 1);
 
-        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        (bytes32[] memory workerIds, ) = _getWorkerInfoByDataId(dataId);
 
         for (uint256 i = 0; i < workerIds.length; i++) {
             Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(workerIds[i]);
@@ -124,8 +124,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         }
     }
 
-    function _getWorkerInfoByDataId(bytes32 dataId) internal returns (bytes32[] memory workerIds, address[] memory workerOwners) {
-        workerIds = dataMgt.getDataById(dataId).workerIds;
+    function _getWorkerInfoByDataId(bytes32 dataId_) internal view returns (bytes32[] memory workerIds, address[] memory workerOwners) {
+        workerIds = dataMgt.getDataById(dataId_).workerIds;
         workerOwners = new address[](workerIds.length);
 
         for (uint256 i = 0; i < workerIds.length; i++) {

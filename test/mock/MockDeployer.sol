@@ -70,9 +70,6 @@ contract MockDeployer is Test {
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
 
-        PADORegistryCoordinator registryCoordinator = PADORegistryCoordinator(
-            address(0)
-        );
         WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
         workerMgt = WorkerMgtMock(
             address(

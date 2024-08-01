@@ -43,6 +43,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         bytes[] calldata publicKey,
         uint256 stakeAmount
     ) external payable returns (bytes32) {
+        require(taskTypes.length == publicKey.length);
         bytes32 workerId = keccak256(abi.encode(name, desc, _workerCount));
         _workerCount++;
 
@@ -76,9 +77,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external returns (bytes32) {
-        return keccak256("test");
-    }
+    ) external returns (bytes32) {}
 
     /**
      * @notice TaskMgt contract request selecting workers which will run the task.
@@ -91,9 +90,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         bytes32 taskId,
         uint32 taskType,
         ComputingInfoRequest calldata computingInfoRequest
-    ) external returns (bool) {
-        return true;
-    }
+    ) external returns (bool) {}
 
     /**
      * @notice DataMgt contract request selecting workers which will encrypt data and run the task.
@@ -107,6 +104,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         uint32 t,
         uint32 n
     ) external returns (bool) {
+        require(t > 0 && t < n);
         require(_workerIds.length >= n, "not enough workers");
 
         bytes32[] memory workerIds = new bytes32[](n);
@@ -137,9 +135,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function getTaskWorkers(
         bytes32 taskId
-    ) external view returns (bytes32[] memory) {
-        return new bytes32[](0);
-    }
+    ) external view returns (bytes32[] memory) {}
 
     /**
      * @notice Get data encryption public key of the task.
@@ -148,9 +144,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function getTaskEncryptionPublicKey(
         bytes32 taskId
-    ) external view returns (bytes memory) {
-        return new bytes(0);
-    }
+    ) external view returns (bytes memory) {}
 
     /**
      * @notice Update worker info.
@@ -163,18 +157,14 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         string calldata name,
         string calldata desc,
         uint32[] calldata taskTypes
-    ) external returns (bool) {
-        return true;
-    }
+    ) external returns (bool) {}
 
     /**
      * @notice Delete worker from network.
      * @param name The name of the worker to be deleted.
      * @return Returns true if the deleting is successful.
      */
-    function deleteWorker(string calldata name) external returns (bool) {
-        return true;
-    }
+    function deleteWorker(string calldata name) external returns (bool) {}
 
     /**
      * @notice Get worker by id.
@@ -229,18 +219,14 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     function delegate(
         bytes32 workerId,
         uint256 delegateAmount
-    ) external payable returns (bool) {
-        return true;
-    }
+    ) external payable returns (bool) {}
 
     /**
      * @notice User cancel delegating to a worker.
      * @param workerId The worker id to cancel delegating.
      * @return Returns true if the canceling is successful.
      */
-    function unDelegate(bytes32 workerId) external returns (bool) {
-        return true;
-    }
+    function unDelegate(bytes32 workerId) external returns (bool) {}
 
     /**
      * @notice Get Workers by delegator address.
@@ -249,9 +235,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function getWorkersByDelegator(
         address delegator
-    ) external view returns (bytes32[] memory) {
-        return new bytes32[](0);
-    }
+    ) external view returns (bytes32[] memory) {}
 
     /**
      * @notice Get delegators by worker id.
@@ -260,9 +244,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function getDelegatorsByWorker(
         bytes32 workerId
-    ) external view returns (address[] memory) {
-        return new address[](0);
-    }
+    ) external view returns (address[] memory) {}
 
     /**
      * @notice Add white list item.
