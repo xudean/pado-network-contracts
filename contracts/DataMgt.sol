@@ -2,25 +2,40 @@
 
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
+import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {Worker} from "./types/Common.sol";
 /**
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
  */
-contract DataMgt is IDataMgt, Initializable {
-    uint256 private _registryCount;
+contract DataMgt is IDataMgt, OwnableUpgradeable {
+    // registry count
+    uint256 public _registryCount;
+
+    // The Worker Management
+    IWorkerMgt public _workerMgt;
+
+    // dataId => dataInfo
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
 
+    // owner => dataIdList[]
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
     
     /// @custom:oz-upgrades-unsafe-allow constructor
-    /// constructor() {
-    ///     _disableInitializers();
-    /// }
+    constructor() {
+        _disableInitializers();
+    }
 
-    function initialize() external initializer {
+    /**
+     * @notice Initialize the data management
+     * @param workerMgt The worker management
+     */
+    function initialize(IWorkerMgt workerMgt) external initializer {
+        _workerMgt = workerMgt;
         _registryCount = 0;
+        __Ownable_init();
     }
 
     /**
@@ -34,12 +49,19 @@ contract DataMgt is IDataMgt, Initializable {
         dataId = keccak256(abi.encode(encryptionSchema, _registryCount));
         _registryCount++;
 
-        // TODO
-        publicKeys = new bytes[](1);
-        publicKeys[0] = bytes("test");
-
-        bytes32[] memory workerIds = new bytes32[](1);
-        workerIds[0] = keccak256(abi.encode(msg.sender));
+        bool res = _workerMgt.selectMultiplePublicKeyWorkers(
+            dataId,
+            encryptionSchema.t,
+            encryptionSchema.n
+        );
+        require(res, "select multiple public key workers error");
+        bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
+        require(workerIds.length == encryptionSchema.n, "get multiple public key workers error");
+        
+        publicKeys = new bytes[](workerIds.length);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            publicKeys[i] = _workerMgt.getWorkerById(workerIds[i]).publicKey;
+        }
 
         DataInfo memory dataInfo = DataInfo({
                 dataId: dataId,
@@ -55,7 +77,7 @@ contract DataMgt is IDataMgt, Initializable {
         _dataInfos[dataId] = dataInfo;
         _dataIdListPerOwner[msg.sender].push(dataId);
 
-        emit PrepareRegistry(dataId, publicKeys);
+        emit DataPrepareRegistry(dataId, publicKeys);
     }
 
     /**
@@ -81,6 +103,8 @@ contract DataMgt is IDataMgt, Initializable {
         dataInfo.dataContent = dataContent;
 
         dataInfo.status = DataStatus.REGISTERED;
+
+        emit DataRegistered(dataId);
 
         return dataId;
     }
@@ -128,5 +152,7 @@ contract DataMgt is IDataMgt, Initializable {
         require(dataInfo.status != DataStatus.DELETED, "data already deleted");
 
         dataInfo.status = DataStatus.DELETED;
+
+        emit DataDeleted(dataId);
     }
 }

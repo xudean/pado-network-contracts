@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {TaskStatus} from "./ITaskMgt.sol";
+import {TaskStatus, ITaskMgt} from "./ITaskMgt.sol";
 /**
  * @notice A struct representing a fee token symbol and address.
  */
@@ -22,6 +22,40 @@ struct Allowance {
  * @notice FeeMgt - Fee Management interface.
  */
 interface IFeeMgt {
+    // emit in addFeeToken
+    event FeeTokenAdded(
+        string indexed tokenSymbol,
+        address tokenAddress,
+        uint256 computingPrice
+    );
+
+    // emit in transfer token
+    event TokenTransfered(
+        address from,
+        string tokenSymbol,
+        uint256 amount
+    );
+
+    // emit in lock
+    event FeeLocked(
+        bytes32 indexed taskId,
+        string tokenSymbol,
+        uint256 amount
+    );
+
+    // emit in settle
+    event FeeSettled(
+        bytes32 indexed taskId,
+        string tokenSymbol,
+        uint256 amount
+    );
+
+    // emit in setTaskMgt
+    event TaskMgtUpdated(
+        address from,
+        address to
+    );
+
     /**
      * @notice TaskMgt contract request transfer tokens.
      * @param from The address from which transfer token.
@@ -39,18 +73,14 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
-     * @param dataPrice The data price of the task.
-     * @param dataProviders The address of data providers which provide data to the task.
+     * @param toLockAmount The amount of fee to lock.
      * @return Returns true if the settlement is successful.
      */
     function lock(
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
-        uint256 dataPrice,
-        address[] calldata dataProviders
+        uint256 toLockAmount 
     ) external returns (bool);
 
     /**
@@ -109,4 +139,10 @@ interface IFeeMgt {
      * @return Allowance for the data user
      */
     function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
+
+    /**
+     * @notice Set TaskMgt.
+     * @param taskMgt The TaskMgt
+     */
+    function setTaskMgt(ITaskMgt taskMgt) external;
 }

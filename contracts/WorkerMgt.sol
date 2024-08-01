@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
-import {ComputingInfoRequest, WorkerType, Worker, WorkerStatus} from "./types/Common.sol";
+import {ComputingInfoRequest, WorkerType, Worker, WorkerStatus, TaskType} from "./types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
@@ -59,7 +59,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     function register(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         uint256 stakeAmount
     ) external payable returns (bytes32) {}
@@ -69,7 +69,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerEigenOperator(
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         bytes calldata quorumNumbers,
         string calldata socket,
@@ -135,7 +135,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      */
     function selectTaskWorkers(
         bytes32 taskId,
-        uint32 taskType,
+        TaskType taskType,
         ComputingInfoRequest calldata computingInfoRequest
     ) external returns (bool) {}
 
@@ -194,7 +194,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     function update(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes
+        TaskType[] calldata taskTypes
     ) external returns (bool) {}
 
     /**
@@ -311,7 +311,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
      * @param operatorSignature The operator signature.
      */
     function _checkWorkerParam(
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         bytes calldata quorumNumbers,
         string calldata socket,

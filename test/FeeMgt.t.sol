@@ -8,19 +8,15 @@ import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.s
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MockDeployer} from "./mock/MockDeployer.sol";
 
-contract FeeMgtTest is Test {
-    FeeMgt private feeMgt;
-    mapping(string tokenSymbol => TestERC20 erc20) erc20Map;
-    string[] tokenSymbolList;
-
+contract FeeMgtTest is MockDeployer {
     bytes32 private ETH_HASH;
     receive() external payable {
     }
 
     function setUp() public {
-        feeMgt = new FeeMgt();
-        feeMgt.initialize(1);
+        _deployAll();
         ETH_HASH = getTokenSymbolHash("ETH");
     }
 
@@ -32,20 +28,22 @@ contract FeeMgtTest is Test {
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
-        erc20Map[tokenSymbol] = erc20;
+        erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
     }
 
-    function test_addFeeToken() public {
+    function test_addFeeToken() public returns (uint256){
         addFeeToken("TEST", "Test Token", 1);
         addFeeToken("bTEST", "The Second Test Token", 1);
+        return 2;
     }
 
     function test_getFeeTokens() public {
-        test_addFeeToken();
+        FeeTokenInfo[] memory oldTokenList = feeMgt.getFeeTokens();
+        uint256 addedNum = test_addFeeToken();
         FeeTokenInfo[] memory tokenList = feeMgt.getFeeTokens();
 
-        assertEq(tokenList.length, tokenSymbolList.length + 1);
+        assertEq(tokenList.length - oldTokenList.length, addedNum);
 
     }
 
@@ -56,45 +54,50 @@ contract FeeMgtTest is Test {
         assertEq(feeMgt.isSupportToken("ETH"), true);
     }
 
-    function getBalance(address target, string memory tokenSymbol) internal returns (uint256) {
+    function getBalance(address target, string memory tokenSymbol) internal view returns (uint256) {
         bytes32 hash = getTokenSymbolHash(tokenSymbol);
         if (hash == ETH_HASH) {
             return address(target).balance;
         }
-        return erc20Map[tokenSymbol].balanceOf(target);
+        return erc20PerSymbol[tokenSymbol].balanceOf(target);
     }
 
     function test_transferToken_ETH() public {
+        // payable(address(taskMgt)).transfer(50);
+        (bool b, ) = payable(address(taskMgt)).call{value: 50}(new bytes(0));
+        require(b, "transfer error");
+
+        vm.prank(address(taskMgt));
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
         uint256 balance = address(feeMgt).balance;
-        assertEq(balance, 5);
+        assertEq(balance, 5, "balance error");
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, "ETH");
-        assertEq(allowance.free, 5);
-        assertEq(allowance.locked, 0);
+        assertEq(allowance.free, 5, "allowance.free error");
+        assertEq(allowance.locked, 0, "allowance.locked error");
     }
 
     function test_transferToken_TEST() public {
         test_addFeeToken();
 
-        TestERC20 erc20 = erc20Map["TEST"];
+        TestERC20 erc20 = erc20PerSymbol["TEST"];
         erc20.mint(msg.sender, 100);
         uint256 ownerBalance = erc20.balanceOf(msg.sender);
-        assertEq(ownerBalance, 100);
+        assertEq(ownerBalance, 100, "ownerBalance error");
 
         vm.prank(msg.sender);
         erc20.approve(address(feeMgt), 5);
         uint256 spenderAllowance = erc20.allowance(msg.sender, address(feeMgt));
-        assertEq(spenderAllowance, 5);
+        assertEq(spenderAllowance, 5, "spenderAllowance error");
         
-
+        vm.prank(address(taskMgt));
         feeMgt.transferToken(msg.sender, "TEST", 5);
         uint256 balance = erc20.balanceOf(address(feeMgt));
-        assertEq(balance, 5);
+        assertEq(balance, 5, "balance error");
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, "TEST");
-        assertEq(allowance.free, 5);
-        assertEq(allowance.locked, 0);
+        assertEq(allowance.free, 5, "allowance.free error");
+        assertEq(allowance.locked, 0, "allowance.locked error");
     }
 
     function test_transferToken(string memory tokenSymbol) internal {
@@ -143,16 +146,15 @@ contract FeeMgtTest is Test {
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        vm.prank(address(taskMgt));
         feeMgt.lock(
             info.taskId,
             info.submitter,
             info.tokenSymbol,
-            info.workerOwners,
-            info.dataPrice,
-            info.dataProviders
+            lockedAmount
         );
 
-        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free - lockedAmount, allowance.free, "allowance.free change error");
         assertEq(oldAllowance.locked + lockedAmount, allowance.locked, "allowance.locked change error");
@@ -172,6 +174,8 @@ contract FeeMgtTest is Test {
         uint256 oldBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+
+        vm.prank(address(taskMgt));
         feeMgt.settle(
             info.taskId,
             TaskStatus.COMPLETED,

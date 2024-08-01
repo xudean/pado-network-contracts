@@ -2,30 +2,59 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo} from "./interface/ITaskMgt.sol";
 import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
+import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {Worker, TaskType} from "./types/Common.sol";
 /**
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
  */
-contract TaskMgt is ITaskMgt, Initializable{
+contract TaskMgt is ITaskMgt, OwnableUpgradeable{
+    // The data management
     IDataMgt public _dataMgt;
+
+    // The fee management
     IFeeMgt public _feeMgt;
 
+    // The worker management
+    IWorkerMgt public _workerMgt;
+
+    // taskId => task
     mapping(bytes32 taskId => Task task) private _allTasks;
+
+    // workerId => taskIds[]
     mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
 
-    bytes32[] _pendingTaskIds;
+    // The id of pending tasks
+    bytes32[] private _pendingTaskIds;
 
-    uint256 private _taskCount;
+    // The count of tasks
+    uint256 public _taskCount;
 
-    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt) public initializer {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize the task management
+     * @param dataMgt The data management
+     * @param feeMgt The fee management
+     * @param workerMgt The worker management
+     */
+    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt, IWorkerMgt workerMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
+        _workerMgt = workerMgt;
         _taskCount = 0;
+        __Ownable_init();
     }
+
+    receive() payable external {}
+
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
      * @param taskType The type of the task.
@@ -37,22 +66,26 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         string calldata tokenSymbol,
         TaskDataInfoRequest calldata dataInfoRequest,
         ComputingInfoRequest calldata computingInfoRequest,
         bytes calldata code
-    ) external payable returns (bytes32) {
-        return bytes32(0);
-    }
-
-    function getWorkerOwners(bytes32[] memory workerIds) internal pure returns (address[] memory) {
+    ) external payable returns (bytes32) {}
+    
+    /**
+     * @notice Get worker owners by worker ids.
+     * @param workerIds The worker id array
+     * @return The worker owner address array
+     */
+    function _getWorkerOwners(bytes32[] memory workerIds) internal view returns (address[] memory) {
         uint256 workerIdLength = workerIds.length;
 
         address[] memory workerOwners = new address[](workerIdLength);
         for (uint256 i = 0; i < workerIdLength; i++) {
-            workerOwners[i] = address(uint160(uint256(keccak256(abi.encode(workerIds)))));
+            Worker memory worker = _workerMgt.getWorkerById(workerIds[i]);
+            workerOwners[i] = worker.owner;
         }
         return workerOwners;
     }
@@ -65,7 +98,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         bytes32 dataId
     ) external payable returns (bytes32) {
@@ -76,17 +109,12 @@ contract TaskMgt is ITaskMgt, Initializable{
 
         require(dataInfo.status == DataStatus.REGISTERED, "data status is not REGISTERED");
         
-        // TODO computing price
-        uint256 fee = priceInfo.price + workerIds.length * 1;
+        uint256 computingPrice = _feeMgt.getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
+        uint256 fee = priceInfo.price + workerIds.length * computingPrice;
         _feeMgt.transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, _taskCount));
         _taskCount++;
-
-        address[] memory dataProviders = new address[](1);
-        dataProviders[0] = dataInfo.owner;
-
-        address[] memory workerOwners = getWorkerOwners(dataInfo.workerIds);
 
         Task memory task = Task({
             taskId: taskId,
@@ -101,7 +129,7 @@ contract TaskMgt is ITaskMgt, Initializable{
                 data: new bytes[](0)
             }),
             computingInfo: ComputingInfo({
-                price: 0,
+                price: computingPrice,
                 t: encryptionSchema.t,
                 n: encryptionSchema.n,
                 workerIds: dataInfo.workerIds,
@@ -119,16 +147,14 @@ contract TaskMgt is ITaskMgt, Initializable{
         
         for (uint256 i = 0; i < workerIds.length; i++) {
             _taskIdForWorker[workerIds[i]].push(taskId);
-            emit WorkerReceiveTask(workerIds[i], taskId);
         }
         _feeMgt.lock(
             taskId,
             msg.sender,
             priceInfo.tokenSymbol,
-            workerOwners,
-            priceInfo.price,
-            dataProviders
+            fee
         );
+        emit TaskDispatched(taskId, workerIds);
 
         return taskId;
     }
@@ -139,9 +165,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param data The content of the data can be the transaction ID of the storage chain.
      * @return True if submission is successful.
      */
-    function submitTaskData(bytes32 taskId, bytes calldata data) external returns (bool) {
-        return false;
-    }
+    function submitTaskData(bytes32 taskId, bytes calldata data) external returns (bool) {}
 
     /**
      * @notice find the index of an element in an array
@@ -173,7 +197,6 @@ contract TaskMgt is ITaskMgt, Initializable{
         _pendingTaskIds.pop();
 
         task.status = TaskStatus.COMPLETED;
-        emit TaskCompleted(task.taskId);
 
         address[] memory dataProviders = new address[](1);
         dataProviders[0] = dataInfo.owner;
@@ -183,21 +206,23 @@ contract TaskMgt is ITaskMgt, Initializable{
             task.status,
             task.submitter,
             task.tokenSymbol,
-            getWorkerOwners(task.computingInfo.workerIds),
+            _getWorkerOwners(task.computingInfo.workerIds),
             dataInfo.priceInfo.price,
             dataProviders
         );
+        emit TaskCompleted(task.taskId);
     }
 
     /**
      * @notice Worker report the computing result.
      * @param taskId The task id to which the result is associated.
+     * @param workerId The worker id.
      * @param result The computing result content including zk proof.
      * @return True if reporting is successful.
      */
-    function reportResult(bytes32 taskId, bytes calldata result) external returns (bool) {
-        // TODO
-        bytes32 workerId = keccak256(abi.encode(msg.sender));
+    function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
+        Worker memory worker = _workerMgt.getWorkerById(workerId);
+        require(msg.sender == worker.owner, "worker id and worker owner error");
         Task storage task = _allTasks[taskId];
         require(task.taskId == taskId, "the task does not exist");
 
@@ -205,7 +230,7 @@ contract TaskMgt is ITaskMgt, Initializable{
         ComputingInfo storage computingInfo = task.computingInfo;
 
         uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
-        require(waitingIndex != type(uint256).max, "task id not in waiting list");
+        require(waitingIndex != type(uint256).max, "worker id not in waiting list");
 
         uint256 workerIndex = _find(workerId, computingInfo.workerIds);
         computingInfo.results[workerIndex] = result;
@@ -223,6 +248,8 @@ contract TaskMgt is ITaskMgt, Initializable{
         if (waitingListLength == 0) {
             _onTaskCompleted(taskId);
         }
+
+        emit ResultReported(taskId, msg.sender);
 
         return true;
     }
@@ -279,9 +306,7 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param dataVerifier The data verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setDataVerifier(uint32 taskType, address dataVerifier) external returns (bool) {
-        return true;
-    }
+    function setDataVerifier(TaskType taskType, address dataVerifier) external onlyOwner returns (bool) {}
 
     /**
      * @notice Set a result verification contract of a task type.
@@ -289,7 +314,5 @@ contract TaskMgt is ITaskMgt, Initializable{
      * @param resultVerifier The result verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setResultVerifier(uint32 taskType, address resultVerifier) external returns (bool) {
-        return true;
-    }
+    function setResultVerifier(TaskType taskType, address resultVerifier) external onlyOwner returns (bool) {}
 }

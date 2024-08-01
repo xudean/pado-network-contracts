@@ -48,10 +48,14 @@ struct DataInfo {
  */
 interface IDataMgt {
     // emit in prepareRegistry
-    event PrepareRegistry(bytes32 dataId, bytes[] publicKeys);
+    event DataPrepareRegistry(bytes32 indexed dataId, bytes[] publicKeys);
 
     // emit in register
-    event Register(bytes32);
+    event DataRegistered(bytes32 indexed dataId);
+
+    // emit in deleteDataById
+    event DataDeleted(bytes32 indexed dataId);
+
     /**
      * @notice Data Provider prepare to register confidential data to PADO Network.
      * @param encryptionSchema EncryptionSchema

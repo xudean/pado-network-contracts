@@ -2,28 +2,48 @@
 
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
-import {TaskStatus} from "./interface/ITaskMgt.sol";
-
+import {ITaskMgt, TaskStatus} from "./interface/ITaskMgt.sol";
 
 /**
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
-contract FeeMgt is IFeeMgt, Initializable {
+contract FeeMgt is IFeeMgt, OwnableUpgradeable {
+    // task mgt
+    ITaskMgt public _taskMgt;
+
+    // tokenSymbol => tokenAddress
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
+
+    // tokenSymbol => computingFee
     mapping(string symbol => uint256 computingFee) private _computingPriceForSymbol;
 
+    // tokenSymbol[]
     string[] private _symbolList;
 
+    // dataUser => tokenSymbol => allowance
     mapping(address dataUser => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForDataUser;
 
+    // taskId => amount
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
 
-    function initialize(uint256 computingPriceForETH) public initializer {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
+    /**
+     * @notice Initial FeeMgt.
+     * @param taskMgt The TaskMgt
+     * @param computingPriceForETH The computing price for ETH.
+     */
+    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH) public initializer {
+        _taskMgt = taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
+        __Ownable_init();
     }
 
     /**
@@ -35,7 +55,7 @@ contract FeeMgt is IFeeMgt, Initializable {
         address from,
         string calldata tokenSymbol,
         uint256 amount
-    ) payable external {
+    ) payable external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "not supported token");
         if (_isETH(tokenSymbol)) {
             require(amount == msg.value, "numTokens is not correct");
@@ -50,6 +70,8 @@ contract FeeMgt is IFeeMgt, Initializable {
         Allowance storage allowance = _allowanceForDataUser[from][tokenSymbol];
 
         allowance.free += amount;
+
+        emit TokenTransfered(from, tokenSymbol, amount);
     }
 
     /**
@@ -57,24 +79,17 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
-     * @param dataPrice The data price of the task.
-     * @param dataProviders The address of data providers which provide data to the task.
+     * @param toLockAmount The amount of fee to lock.
      * @return Returns true if the settlement is successful.
      */
     function lock(
         bytes32 taskId,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
-        uint256 dataPrice,
-        address[] calldata dataProviders
-    ) external returns (bool) {
+        uint256 toLockAmount 
+    ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
-        uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
-        require(computingPrice > 0, "computing price is not set");
 
-        uint256 toLockAmount = workerOwners.length * computingPrice + dataProviders.length * dataPrice;
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
 
         require(allowance.free >= toLockAmount, "Insufficient free allowance");
@@ -82,6 +97,8 @@ contract FeeMgt is IFeeMgt, Initializable {
         allowance.free -= toLockAmount;
         allowance.locked += toLockAmount;
         _lockedAmountForTaskId[taskId] = toLockAmount;
+
+        emit FeeLocked(taskId, tokenSymbol, toLockAmount);
         return true;
     }
 
@@ -104,7 +121,7 @@ contract FeeMgt is IFeeMgt, Initializable {
         address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
-    ) external returns (bool) {
+    ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "not supported token");
         uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
         require(computingPrice > 0, "computing price is not set");
@@ -122,29 +139,17 @@ contract FeeMgt is IFeeMgt, Initializable {
         require(lockedAmount >= expectedAllowance, "locked not enough");
 
         if (expectedAllowance > 0) {
-            if (_isETH(tokenSymbol)) {
-                for (uint256 i = 0; i < workerOwners.length; i++) {
-                    payable(workerOwners[i]).transfer(computingPrice);
-                }
-    
-                for (uint256 i = 0; i < dataProviders.length; i++) {
-                    payable(dataProviders[i]).transfer(dataPrice);
-                }
-            }
-            else {
-                require(_tokenAddressForSymbol[tokenSymbol] != address(0), "can not find token address");
-                IERC20 tokenAddress = IERC20(_tokenAddressForSymbol[tokenSymbol]);
-    
-                for (uint256 i = 0; i < workerOwners.length; i++) {
-                    tokenAddress.transfer(workerOwners[i], computingPrice);
-                }
-    
-                for (uint256 i = 0; i < dataProviders.length; i++) {
-                    tokenAddress.transfer(dataProviders[i], dataPrice);
-                }
-            }
+            _settle(
+                taskId,
+                tokenSymbol,
+                computingPrice,
+                workerOwners,
+                dataPrice,
+                dataProviders
+            );
     
             allowance.locked -= expectedAllowance;
+
         }
         if (lockedAmount > expectedAllowance) {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
@@ -163,7 +168,7 @@ contract FeeMgt is IFeeMgt, Initializable {
      * @param computingPrice The computing price for the token.
      * @return Returns true if the adding is successful.
      */
-    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool) {
+    function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {
         return _addFeeToken(tokenSymbol, tokenAddress, computingPrice);
     }
 
@@ -181,6 +186,8 @@ contract FeeMgt is IFeeMgt, Initializable {
         _tokenAddressForSymbol[tokenSymbol] = tokenAddress;
         _computingPriceForSymbol[tokenSymbol] = computingPrice;
         _symbolList.push(tokenSymbol);
+
+        emit FeeTokenAdded(tokenSymbol, tokenAddress, computingPrice);
         return true;
     }
 
@@ -252,5 +259,66 @@ contract FeeMgt is IFeeMgt, Initializable {
      */
     function _isETH(string memory tokenSymbol) internal pure returns (bool) {
         return keccak256(bytes(tokenSymbol)) == keccak256(bytes("ETH"));
+    }
+
+    /**
+     * @notice TaskMgt contract request settlement fee.
+     * @param taskId The task id.
+     * @param tokenSymbol The fee token symbol.
+     * @param computingPrice The computing price of the task.
+     * @param workerOwners The owner address of all workers which have already run the task.
+     * @param dataPrice The data price of the task.
+     * @param dataProviders The address of data providers which provide data to the task.
+     */
+    function _settle(
+        bytes32 taskId,
+        string memory tokenSymbol,
+        uint256 computingPrice,
+        address[] memory workerOwners,
+        uint256 dataPrice,
+        address[] memory dataProviders
+    ) internal {
+        uint256 settledFee = 0;
+        if (_isETH(tokenSymbol)) {
+            for (uint256 i = 0; i < workerOwners.length; i++) {
+                payable(workerOwners[i]).transfer(computingPrice);
+                settledFee += computingPrice;
+            }
+
+            for (uint256 i = 0; i < dataProviders.length; i++) {
+                payable(dataProviders[i]).transfer(dataPrice);
+                settledFee += dataPrice;
+            }
+        }
+        else {
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "can not find token address");
+            IERC20 tokenAddress = IERC20(_tokenAddressForSymbol[tokenSymbol]);
+
+            for (uint256 i = 0; i < workerOwners.length; i++) {
+                tokenAddress.transfer(workerOwners[i], computingPrice);
+                settledFee += computingPrice;
+            }
+
+            for (uint256 i = 0; i < dataProviders.length; i++) {
+                tokenAddress.transfer(dataProviders[i], dataPrice);
+                settledFee += dataPrice;
+            }
+        }
+        emit FeeSettled(taskId, tokenSymbol, settledFee);
+    }
+
+    /**
+     * @notice Set TaskMgt.
+     * @param taskMgt The TaskMgt
+     */
+    function setTaskMgt(ITaskMgt taskMgt) external onlyOwner{
+        ITaskMgt oldTaskMgt = _taskMgt;
+        _taskMgt = taskMgt;
+        emit TaskMgtUpdated(address(oldTaskMgt), address(_taskMgt));
+    }
+
+    modifier onlyTaskMgt() {
+        require(msg.sender == address(_taskMgt), "only task mgt allowed to call");
+        _;
     }
 }

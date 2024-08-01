@@ -5,14 +5,13 @@ pragma solidity ^0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import {DataMgt, DataInfo} from "../contracts/DataMgt.sol";
 import {EncryptionSchema, PriceInfo, DataStatus} from "../contracts/interface/IDataMgt.sol";
+import {MockDeployer} from "./mock/MockDeployer.sol";
 
-contract DataMgtTest is Test {
-    DataMgt public dataMgt;
+contract DataMgtTest is MockDeployer {
     bytes32 public registryId;
 
     function setUp() public {
-        dataMgt = new DataMgt();
-        dataMgt.initialize();
+        _deployAll();
     }
 
     function test_Registry() public {
