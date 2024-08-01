@@ -72,7 +72,7 @@ interface ITaskMgt {
     event TaskDispatched(bytes32 indexed taskId, bytes32[] workerIds);
 
     // emit in report result
-    event ResultReported(bytes32 indexed taskId, address indexed worker);
+    event ResultReported(bytes32 indexed taskId, address worker);
 
     // emit when task completed
     event TaskCompleted(bytes32 indexed taskId);

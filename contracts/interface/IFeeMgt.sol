@@ -25,29 +25,29 @@ interface IFeeMgt {
     // emit in addFeeToken
     event FeeTokenAdded(
         string indexed tokenSymbol,
-        address indexed tokenAddress,
-        uint256 indexed computingPrice
+        address tokenAddress,
+        uint256 computingPrice
     );
 
     // emit in transfer token
     event TokenTransfered(
-        address indexed from,
-        string indexed tokenSymbol,
-        uint256 indexed amount
+        address from,
+        string tokenSymbol,
+        uint256 amount
     );
 
     // emit in lock
     event FeeLocked(
         bytes32 indexed taskId,
-        string indexed tokenSymbol,
-        uint256 indexed amount
+        string tokenSymbol,
+        uint256 amount
     );
 
     // emit in settle
     event FeeSettled(
         bytes32 indexed taskId,
-        string indexed tokenSymbol,
-        uint256 indexed amount
+        string tokenSymbol,
+        uint256 amount
     );
 
     // emit in setTaskMgt
