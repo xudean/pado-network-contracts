@@ -13,22 +13,38 @@ import {Worker} from "./types/Common.sol";
  * @notice TaskMgt - Task Management Contract.
  */
 contract TaskMgt is ITaskMgt, OwnableUpgradeable{
+    // The data management
     IDataMgt public _dataMgt;
+
+    // The fee management
     IFeeMgt public _feeMgt;
+
+    // The worker management
     IWorkerMgt public _workerMgt;
 
+    // taskId => task
     mapping(bytes32 taskId => Task task) private _allTasks;
+
+    // workerId => taskIds[]
     mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
 
-    bytes32[] _pendingTaskIds;
+    // The id of pending tasks
+    bytes32[] private _pendingTaskIds;
 
-    uint256 private _taskCount;
+    // The count of tasks
+    uint256 public _taskCount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
+    /**
+     * @notice Initialize the task management
+     * @param dataMgt The data management
+     * @param feeMgt The fee management
+     * @param workerMgt The worker management
+     */
     function initialize(IDataMgt dataMgt, IFeeMgt feeMgt, IWorkerMgt workerMgt) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
@@ -57,7 +73,12 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         ComputingInfoRequest calldata computingInfoRequest,
         bytes calldata code
     ) external payable returns (bytes32) {}
-
+    
+    /**
+     * @notice Get worker owners by worker ids.
+     * @param workerIds The worker id array
+     * @return The worker owner address array
+     */
     function _getWorkerOwners(bytes32[] memory workerIds) internal view returns (address[] memory) {
         uint256 workerIdLength = workerIds.length;
 

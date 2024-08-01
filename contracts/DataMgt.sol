@@ -11,10 +11,16 @@ import {Worker} from "./types/Common.sol";
  * @notice DataMgt - Data Management Contract.
  */
 contract DataMgt is IDataMgt, OwnableUpgradeable {
-    uint256 private _registryCount;
-    IWorkerMgt private _workerMgt;
+    // registry count
+    uint256 public _registryCount;
+
+    // The Worker Management
+    IWorkerMgt public _workerMgt;
+
+    // dataId => dataInfo
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
 
+    // owner => dataIdList[]
     mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
     
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -22,6 +28,10 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         _disableInitializers();
     }
 
+    /**
+     * @notice Initialize the data management
+     * @param workerMgt The worker management
+     */
     function initialize(IWorkerMgt workerMgt) external initializer {
         _workerMgt = workerMgt;
         _registryCount = 0;

@@ -7,27 +7,39 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
 import {ITaskMgt, TaskStatus} from "./interface/ITaskMgt.sol";
 
-
 /**
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
 contract FeeMgt is IFeeMgt, OwnableUpgradeable {
-    ITaskMgt private _taskMgt;
+    // task mgt
+    ITaskMgt public _taskMgt;
+
+    // tokenSymbol => tokenAddress
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
+
+    // tokenSymbol => computingFee
     mapping(string symbol => uint256 computingFee) private _computingPriceForSymbol;
 
+    // tokenSymbol[]
     string[] private _symbolList;
 
+    // dataUser => tokenSymbol => allowance
     mapping(address dataUser => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForDataUser;
 
+    // taskId => amount
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
-
-
+    
+    /**
+     * @notice Initial FeeMgt.
+     * @param taskMgt The TaskMgt
+     * @param computingPriceForETH The computing price for ETH.
+     */
     function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH) public initializer {
         _taskMgt = taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
