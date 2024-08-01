@@ -15,6 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
+import {TaskType} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
@@ -86,7 +87,7 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         erc20.approve(address(feeMgt), feeAmount);
         vm.prank(address(msg.sender));
         taskId = taskMgt.submitTask{value: feeAmount}(
-            0,
+            TaskType.DATA_SHARING,
             consumerPk,
             dataId
         );

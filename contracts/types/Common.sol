@@ -38,3 +38,12 @@ enum WorkerStatus {
     REGISTERED,
     UNREGISTERED
 }
+
+/**
+ * @notice A enum representing all task type
+ */
+enum TaskType {
+	NEVER_USED,
+	DATA_SHARING
+}
+

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import { ComputingInfoRequest } from "../types/Common.sol";
+import { ComputingInfoRequest, TaskType } from "../types/Common.sol";
 
 /**
  * @notice A enum representing all task status.
@@ -20,7 +20,7 @@ enum TaskStatus {
  */
 struct Task {
     bytes32 taskId; // The UID of the task.
-    uint32 taskType; // The type of the task.
+    TaskType taskType; // The type of the task.
     bytes consumerPk; // The Public Key of the Network Consumer.
     string tokenSymbol; // The token symbol of data and computing fee.
     bytes32 dataId; // The id of the data
@@ -87,7 +87,7 @@ interface ITaskMgt {
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         string calldata tokenSymbol,
         TaskDataInfoRequest calldata dataInfoRequest,
@@ -103,7 +103,7 @@ interface ITaskMgt {
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         bytes32 dataId
     ) external payable returns (bytes32);
@@ -151,7 +151,7 @@ interface ITaskMgt {
      * @param dataVerifier The data verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setDataVerifier(uint32 taskType, address dataVerifier) external returns (bool);
+    function setDataVerifier(TaskType taskType, address dataVerifier) external returns (bool);
 
     /**
      * @notice Set a result verification contract of a task type.
@@ -159,5 +159,5 @@ interface ITaskMgt {
      * @param resultVerifier The result verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setResultVerifier(uint32 taskType, address resultVerifier) external returns (bool);
+    function setResultVerifier(TaskType taskType, address resultVerifier) external returns (bool);
 }

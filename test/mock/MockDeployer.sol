@@ -22,6 +22,7 @@ import {EmptyContract} from "./EmptyContract.sol";
 import "../../contracts/PADORegistryCoordinator.sol";
 // import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {RegistryCoordinatorMock} from "./RegistryCoordinatorMock.sol";
+import {TaskType} from "../../contracts/types/Common.sol";
 
 contract MockDeployer is Test {
     ProxyAdmin proxyAdmin;
@@ -53,8 +54,8 @@ contract MockDeployer is Test {
         bytes[] memory publicKeys = new bytes[](1);
         publicKeys[0] = onePublicKey;
 
-        uint32[] memory taskTypes = new uint32[](1);
-        taskTypes[0] = 1;
+        TaskType[] memory taskTypes = new TaskType[](1);
+        taskTypes[0] = TaskType.DATA_SHARING;
 
         vm.prank(address(uint160(uint256(keccak256(bytes(name))))));
         // workerMgt.register(name, "test", taskTypes, publicKeys, 0);

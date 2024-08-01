@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import {ComputingInfoRequest, Worker} from "../types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import {TaskType} from "../types/Common.sol";
 
 /**
  * @title IWorkerMgt
@@ -23,7 +24,7 @@ interface IWorkerMgt {
     function register(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         uint256 stakeAmount
     ) external payable returns (bytes32);
@@ -33,7 +34,7 @@ interface IWorkerMgt {
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerEigenOperator(
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         bytes calldata quorumNumbers,
         string calldata socket,
@@ -50,7 +51,7 @@ interface IWorkerMgt {
      */
     function selectTaskWorkers(
         bytes32 taskId,
-        uint32 taskType,
+        TaskType taskType,
         ComputingInfoRequest calldata computingInfoRequest
     ) external returns (bool);
 
@@ -104,7 +105,7 @@ interface IWorkerMgt {
     function update(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes
+        TaskType[] calldata taskTypes
     ) external returns (bool);
 
     /**

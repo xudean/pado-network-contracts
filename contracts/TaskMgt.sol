@@ -7,7 +7,7 @@ import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest,
 import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
-import {Worker} from "./types/Common.sol";
+import {Worker, TaskType} from "./types/Common.sol";
 /**
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
@@ -66,7 +66,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         string calldata tokenSymbol,
         TaskDataInfoRequest calldata dataInfoRequest,
@@ -98,7 +98,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @return The UID of the new task
      */
     function submitTask(
-        uint32 taskType,
+        TaskType taskType,
         bytes calldata consumerPk,
         bytes32 dataId
     ) external payable returns (bytes32) {
@@ -306,7 +306,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param dataVerifier The data verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setDataVerifier(uint32 taskType, address dataVerifier) external onlyOwner returns (bool) {}
+    function setDataVerifier(TaskType taskType, address dataVerifier) external onlyOwner returns (bool) {}
 
     /**
      * @notice Set a result verification contract of a task type.
@@ -314,5 +314,5 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param resultVerifier The result verification contract address.
      * @return Returns true if the setting is successful.
      */
-    function setResultVerifier(uint32 taskType, address resultVerifier) external onlyOwner returns (bool) {}
+    function setResultVerifier(TaskType taskType, address resultVerifier) external onlyOwner returns (bool) {}
 }

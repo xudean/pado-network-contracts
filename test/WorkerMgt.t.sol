@@ -10,6 +10,7 @@ import "./mock/WorkerSelectMock.t.sol";
 import "../contracts/PADORegistryCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TaskType} from "../contracts/types/Common.sol";
 
 contract WorkerMgtTest is Test {
     ProxyAdmin public padoNetworkProxyAdmin;
@@ -59,8 +60,8 @@ contract WorkerMgtTest is Test {
     }
 
     function testRegistryWorker() public {
-        uint32[] memory taskTypes = new uint32[](1);
-        taskTypes[0] = 1;
+        TaskType[] memory taskTypes = new TaskType[](1);
+        taskTypes[0] = TaskType.DATA_SHARING;
         bytes[] memory publicKeys = new bytes[](1);
         publicKeys[0] = "0x024e45D7F868C41F3723B13fD7Ae03AA5A181362";
         bytes memory quorumNumbers = new bytes(1);
@@ -94,8 +95,8 @@ contract WorkerMgtTest is Test {
 //    function testWhiteList() public {
 //        console.log("owner is:%s", workerMgt.owner());
 //        console.log("address(this) is:%s", address(this));
-//        uint32[] memory taskTypes = new uint32[](1);
-//        taskTypes[0] = 1;
+//        TaskType[] memory taskTypes = new TaskType[](1);
+//        taskTypes[0] = TaskType.DATA_SHARING;
 //        bytes[] memory publicKeys = new bytes[](1);
 //        publicKeys[0] = "0x024e45D7F868C41F3723B13fD7Ae03AA5A181362";
 //        bytes memory quorumNumbers = new bytes(1);

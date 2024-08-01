@@ -3,7 +3,7 @@
 pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {Worker, WorkerStatus, WorkerType, ComputingInfoRequest, Worker} from "../../contracts/types/Common.sol";
+import {Worker, WorkerStatus, WorkerType, ComputingInfoRequest, Worker, TaskType} from "../../contracts/types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import {IWorkerMgt} from "../../contracts/interface/IWorkerMgt.sol";
@@ -39,7 +39,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     function register(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         uint256 stakeAmount
     ) external payable returns (bytes32) {
@@ -71,7 +71,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerEigenOperator(
-        uint32[] calldata taskTypes,
+        TaskType[] calldata taskTypes,
         bytes[] calldata publicKey,
         bytes calldata quorumNumbers,
         string calldata socket,
@@ -88,7 +88,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function selectTaskWorkers(
         bytes32 taskId,
-        uint32 taskType,
+        TaskType taskType,
         ComputingInfoRequest calldata computingInfoRequest
     ) external returns (bool) {}
 
@@ -156,7 +156,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     function update(
         string calldata name,
         string calldata desc,
-        uint32[] calldata taskTypes
+        TaskType[] calldata taskTypes
     ) external returns (bool) {}
 
     /**
