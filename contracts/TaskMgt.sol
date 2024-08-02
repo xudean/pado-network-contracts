@@ -107,7 +107,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         bytes32[] memory workerIds = dataInfo.workerIds;
         EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
 
-        require(dataInfo.status == DataStatus.REGISTERED, "data status is not REGISTERED");
+        require(dataInfo.status == DataStatus.REGISTERED, "TaskMgt.submitTask: data status is not REGISTERED");
         
         uint256 computingPrice = _feeMgt.getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
         uint256 fee = priceInfo.price + workerIds.length * computingPrice;
@@ -222,15 +222,15 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
         Worker memory worker = _workerMgt.getWorkerById(workerId);
-        require(msg.sender == worker.owner, "worker id and worker owner error");
+        require(msg.sender == worker.owner, "TaskMgt.reportResult: worker id and worker owner error");
         Task storage task = _allTasks[taskId];
-        require(task.taskId == taskId, "the task does not exist");
+        require(task.taskId == taskId, "TaskMgt.reportResult: the task does not exist");
 
-        require(task.status == TaskStatus.PENDING, "the task status is not PENDING");
+        require(task.status == TaskStatus.PENDING, "TaskMgt.reportResult: the task status is not PENDING");
         ComputingInfo storage computingInfo = task.computingInfo;
 
         uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
-        require(waitingIndex != type(uint256).max, "worker id not in waiting list");
+        require(waitingIndex != type(uint256).max, "TaskMgt.reportResult: worker id not in waiting list");
 
         uint256 workerIndex = _find(workerId, computingInfo.workerIds);
         computingInfo.results[workerIndex] = result;
@@ -294,9 +294,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function getCompletedTaskById(bytes32 taskId) external view returns (Task memory) {
         Task storage task = _allTasks[taskId];
-        require(task.taskId == taskId, "task does not exist");
+        require(task.taskId == taskId, "TaskMgt.getCompletedTaskById: task does not exist");
 
-        require(task.status == TaskStatus.COMPLETED, "task is not completed");
+        require(task.status == TaskStatus.COMPLETED, "TaskMgt.getCompletedTaskById: task is not completed");
         return task;
     }
 

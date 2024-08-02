@@ -54,9 +54,9 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
             encryptionSchema.t,
             encryptionSchema.n
         );
-        require(res, "select multiple public key workers error");
+        require(res, "DataMgt.prepareRegistry: select multiple public key workers error");
         bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
-        require(workerIds.length == encryptionSchema.n, "get multiple public key workers error");
+        require(workerIds.length == encryptionSchema.n, "DataMgt.prepareRegistry: get multiple public key workers error");
         
         Worker[] memory workers = _workerMgt.getWorkersByIds(workerIds);
         publicKeys = new bytes[](workerIds.length);
@@ -95,7 +95,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
     ) external returns (bytes32) {
-        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "invalid dataId");
+        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "DataMgt.register: invalid dataId");
 
         DataInfo storage dataInfo = _dataInfos[dataId];
 
@@ -136,7 +136,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     function getDataById(
         bytes32 dataId
     ) external view returns (DataInfo memory) {
-        require(_dataInfos[dataId].dataId != 0, "data not exist");
+        require(_dataInfos[dataId].dataId == dataId, "DataMgt.getDataById: data does not exist");
 
         return _dataInfos[dataId];
     }
@@ -149,8 +149,8 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         bytes32 dataId
     ) external {
         DataInfo storage dataInfo = _dataInfos[dataId];
-        require(dataInfo.dataId != 0, "data not exist");
-        require(dataInfo.status != DataStatus.DELETED, "data already deleted");
+        require(dataInfo.dataId == dataId, "DataMgt.deleteDataById: data does not exist");
+        require(dataInfo.status != DataStatus.DELETED, "DataMgt.deleteDataById: data already deleted");
 
         dataInfo.status = DataStatus.DELETED;
 
