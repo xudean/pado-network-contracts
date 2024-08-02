@@ -25,15 +25,15 @@ import "../../../contracts/TaskMgt.sol";
 // forge script script/deploy/holesky/Holesky_DeployPADONetworkContracts.s.sol:Holesky_DeployPADONetworkContracts --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
 contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
-        string(
-            bytes(
-                "./script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
-            )
-        );
+    string(
+        bytes(
+            "./script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
+        )
+    );
     string public outputPath =
-        string.concat(
-            "script/deploy/holesky/output/17000/padonetwork_contracts_deployment_data_holesky.json"
-        );
+    string.concat(
+        "script/deploy/holesky/output/17000/padonetwork_contracts_deployment_data_holesky.json"
+    );
 
     ProxyAdmin public proxyAdmin;
     address public networkOwner;
@@ -54,8 +54,8 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     TaskMgt public taskMgtImplementation;
 
     function run()
-        external
-        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin)
+    external
+    returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin)
     {
         console.log("deployer is:%s", msg.sender);
 
@@ -89,13 +89,14 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         vm.stopBroadcast();
 
-        return (workerMgt,feeMgt,dataMgt,taskMgt, proxyAdmin);
+        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin);
     }
 
     /**
      * @notice Deploy  middleware contracts
      */
     function _deployPadoNeworkContracts(string memory config_data) internal {
+        uint256 computingPriceForETH = 0;
         proxyAdmin = new ProxyAdmin();
         emptyContract = EmptyContract(
             0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2
@@ -105,7 +106,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         registryCoordinator = PADORegistryCoordinator(
             stdJson.readAddress(config_data, ".addresses.registryCoordinator")
         );
-        console.log("registryCoordinator is %s",address(registryCoordinator));
+        console.log("registryCoordinator is %s", address(registryCoordinator));
         //workerMgt
         workerMgt = WorkerMgt(
             address(
@@ -144,11 +145,13 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         //taskMgt
         taskMgt = TaskMgt(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
                 )
             )
         );
@@ -175,7 +178,11 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(feeMgt))),
             address(feeMgtImplementation),
-            abi.encodeWithSelector(FeeMgt.initialize.selector, 0)
+            abi.encodeWithSelector(
+                FeeMgt.initialize.selector,
+                taskMgt,
+                computingPriceForETH
+            )
         );
 
         console.log("upgrade feeMgt");
@@ -183,18 +190,27 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(dataMgt))),
             address(dataMgtImplementation),
-            abi.encodeWithSelector(DataMgt.initialize.selector)
+            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt)
         );
         console.log("upgrade dataMgt");
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(taskMgt))),
             address(taskMgtImplementation),
-            abi.encodeWithSelector(TaskMgt.initialize.selector, dataMgt, feeMgt)
+            abi.encodeWithSelector(
+                TaskMgt.initialize.selector,
+                dataMgt,
+                feeMgt,
+                workerMgt
+            )
         );
         console.log("upgrade taskMgt");
-        console.log("registryCoordinator is:%s,owner is:%s",address(registryCoordinator),registryCoordinator.owner());
-        console.log("workerMgt is:%s",address(workerMgt));
+        console.log(
+            "registryCoordinator is:%s,owner is:%s",
+            address(registryCoordinator),
+            registryCoordinator.owner()
+        );
+        console.log("workerMgt is:%s", address(workerMgt));
         registryCoordinator.setWorkerMgt(workerMgt);
         proxyAdmin.transferOwnership(networkUpgrader);
         console.log("networkUpgrader is:%s", address(networkUpgrader));
@@ -231,7 +247,11 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         );
 
         vm.serializeAddress(deployed_addresses, "taskMgt", address(taskMgt));
-        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
+        vm.serializeAddress(
+            deployed_addresses,
+            "proxyAdmin",
+            address(proxyAdmin)
+        );
 
         string memory deployed_addresses_output = vm.serializeAddress(
             deployed_addresses,
