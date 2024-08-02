@@ -216,6 +216,24 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     }
 
     /**
+     * @notice Get workers by ids.
+     * @param workerids The id of workers
+     * @return Returns The workers
+     */
+    function getWorkersByIds(
+        bytes32[] calldata workerids
+    ) external view returns (Worker[] memory) {
+        uint256 workerIdLength = workerids.length;
+        Worker[] memory result = new Worker[](workerIdLength);
+
+        for (uint256 i = 0; i < workerIdLength; i++) {
+            require(workers[workerids[i]].workerId == workerids[i], "WorkerMgt.getWorkersByIds: invalid worker id");
+            result[i] = workers[workerids[i]];
+        }
+        return result;
+    }
+
+    /**
      * @notice Get worker by name.
      * @param workerName The worker name.
      * @return Returns the worker.

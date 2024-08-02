@@ -83,9 +83,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         uint256 workerIdLength = workerIds.length;
 
         address[] memory workerOwners = new address[](workerIdLength);
+        Worker[] memory workers = _workerMgt.getWorkersByIds(workerIds);
         for (uint256 i = 0; i < workerIdLength; i++) {
-            Worker memory worker = _workerMgt.getWorkerById(workerIds[i]);
-            workerOwners[i] = worker.owner;
+            workerOwners[i] = workers[i].owner;
         }
         return workerOwners;
     }

@@ -178,6 +178,24 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         require(worker.workerId == workerId, "worker does not exist");
         return worker;
     }
+	
+	/**
+	 * @notice Get workers by ids.
+	 * @param workerIds The id of workers
+	 * @return Returns The workers
+	 */
+	function getWorkersByIds(
+	    bytes32[] calldata workerIds
+	) external view returns (Worker[] memory) {
+		uint256 workerIdLength = workerIds.length;
+		Worker[] memory result = new Worker[](workerIdLength);
+
+		for (uint256 i = 0; i < workerIdLength; i++) {
+			require(_allWorkers[workerIds[i]].workerId == workerIds[i], "WorkerMgtMock.getWorkersByIds: invalid worker id");
+			result[i] = _allWorkers[workerIds[i]];
+		}
+		return result;
+	}
 
     /**
      * @notice Get worker by name.

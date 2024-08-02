@@ -125,6 +125,15 @@ interface IWorkerMgt {
     ) external view returns (Worker memory);
 
     /**
+     * @notice Get workers by ids.
+     * @param workerIds The id of workers
+     * @return Returns The workers
+     */
+    function getWorkersByIds(
+        bytes32[] calldata workerIds
+    ) external view returns (Worker[] memory);
+
+    /**
      * @notice Get worker by name.
      * @param workerName The worker name.
      * @return Returns the worker.

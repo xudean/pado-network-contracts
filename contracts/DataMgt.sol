@@ -58,9 +58,10 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
         require(workerIds.length == encryptionSchema.n, "get multiple public key workers error");
         
+        Worker[] memory workers = _workerMgt.getWorkersByIds(workerIds);
         publicKeys = new bytes[](workerIds.length);
         for (uint256 i = 0; i < workerIds.length; i++) {
-            publicKeys[i] = _workerMgt.getWorkerById(workerIds[i]).publicKey;
+            publicKeys[i] = workers[i].publicKey;
         }
 
         DataInfo memory dataInfo = DataInfo({

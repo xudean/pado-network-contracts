@@ -15,7 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType} from "../contracts/types/Common.sol";
+import {TaskType, Worker} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
@@ -129,8 +129,9 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         workerIds = dataMgt.getDataById(dataId_).workerIds;
         workerOwners = new address[](workerIds.length);
 
+        Worker[] memory workers = workerMgt.getWorkersByIds(workerIds);
         for (uint256 i = 0; i < workerIds.length; i++) {
-            workerOwners[i] = workerMgt.getWorkerById(workerIds[i]).owner;
+            workerOwners[i] = workers[i].owner;
         }
     }
 
