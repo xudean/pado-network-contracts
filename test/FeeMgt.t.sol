@@ -169,6 +169,32 @@ contract FeeMgtTest is MockDeployer {
         test_lock("TEST");
     }
 
+    function test_unlock(string memory tokenSymbol) internal {
+        test_lock(tokenSymbol);
+        FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
+        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        vm.prank(address(taskMgt));
+        feeMgt.unlock(
+            info.taskId,
+            info.submitter,
+            info.tokenSymbol,
+            lockedAmount
+        );
+
+        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        assertEq(oldAllowance.free + lockedAmount, allowance.free, "allowance.free change error");
+        assertEq(oldAllowance.locked - lockedAmount, allowance.locked, "allowance.locked change error");
+    }
+
+    function test_unlock_ETH() public {
+        test_lock("ETH");
+    }
+    function test_unlock_TEST() public {
+        test_lock("TEST");
+    }
+
     function test_settle(string memory tokenSymbol) internal {
         test_lock(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
