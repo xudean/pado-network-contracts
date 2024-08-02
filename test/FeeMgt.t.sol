@@ -65,7 +65,6 @@ contract FeeMgtTest is MockDeployer {
     }
 
     function test_transferToken_ETH() public {
-        // payable(address(taskMgt)).transfer(50);
         (bool b, ) = payable(address(taskMgt)).call{value: 50}(new bytes(0));
         require(b, "transfer error");
 
@@ -110,6 +109,30 @@ contract FeeMgtTest is MockDeployer {
         else {
             test_transferToken_TEST();
         }
+    }
+
+    function test_withdrawToken(string memory tokenSymbol) internal {
+        test_transferToken(tokenSymbol);
+        
+        uint256 oldSenderBalance = getBalance(msg.sender, tokenSymbol);
+        uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
+
+        vm.prank(address(taskMgt));
+        feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
+
+        uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
+        uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
+
+        assertEq(oldSenderBalance + 5, senderBalance, "sender balance error");
+        assertEq(oldFeeMgtBalance - 5, feeMgtBalance, "feemgt balance error");
+    }
+
+    function test_withdrawToken_ETH() public {
+        test_withdrawToken("ETH");
+    }
+
+    function test_withdrawToken_TEST() public {
+        test_withdrawToken("TEST");
     }
 
     struct SubmittionInfo {
@@ -189,10 +212,10 @@ contract FeeMgtTest is MockDeployer {
     }
 
     function test_unlock_ETH() public {
-        test_lock("ETH");
+        test_unlock("ETH");
     }
     function test_unlock_TEST() public {
-        test_lock("TEST");
+        test_unlock("TEST");
     }
 
     function test_settle(string memory tokenSymbol) internal {

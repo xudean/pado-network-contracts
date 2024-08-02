@@ -23,6 +23,13 @@ interface IFeeMgt {
         uint256 amount
     );
 
+    // emit in withdraw
+    event TokenWithdrawn(
+        address to,
+        string tokenSymbol,
+        uint256 amount
+    );
+
     // emit in lock
     event FeeLocked(
         bytes32 indexed taskId,
@@ -61,6 +68,18 @@ interface IFeeMgt {
         string calldata tokenSymbol,
         uint256 amount
     ) payable external;
+
+    /**
+     * @notice TaskMgt contract request transfer tokens.
+     * @param to The address to which token is withdrawn.
+     * @param tokenSymbol The token symbol
+     * @param amount The amount of tokens to be transfered
+     */
+    function withdrawToken(
+        address to,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external;
 
     /**
      * @notice TaskMgt contract request locking fee.

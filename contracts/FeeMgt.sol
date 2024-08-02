@@ -77,6 +77,36 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     }
 
     /**
+     * @notice TaskMgt contract request transfer tokens.
+     * @param to The address to which token is withdrawn.
+     * @param tokenSymbol The token symbol
+     * @param amount The amount of tokens to be transfered
+     */
+    function withdrawToken(
+        address to,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external {
+        require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
+
+        Allowance storage allowance = _allowanceForDataUser[to][tokenSymbol];
+        require(allowance.free >= amount, "FeeMgt.withdrawToken: insufficient free allowance");
+        allowance.free -= amount;
+        if (_isETH(tokenSymbol)) {
+            (bool res, )  = payable(address(to)).call{value: amount}(new bytes(0));
+            require(res, "FeeMgt.withdrawToken: call error");
+        }
+        else {
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "FeeMgt.transferToken: tokenSymbol is not supported");
+            
+            address tokenAddress = _tokenAddressForSymbol[tokenSymbol];
+            IERC20(tokenAddress).transfer(to, amount);
+        }
+
+        emit TokenWithdrawn(to, tokenSymbol, amount);
+    }
+
+    /**
      * @notice TaskMgt contract request locking fee.
      * @param taskId The task id.
      * @param submitter The submitter of the task.
