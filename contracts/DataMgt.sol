@@ -3,7 +3,7 @@
 pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
+import {IDataMgt} from "./interface/IDataMgt.sol"; 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
 import {Worker, DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "./types/Common.sol";
 

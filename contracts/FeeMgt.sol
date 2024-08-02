@@ -5,8 +5,8 @@ pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
-import {ITaskMgt, TaskStatus} from "./interface/ITaskMgt.sol";
-import {FeeTokenInfo, Allowance} from "./types/Common.sol";
+import {ITaskMgt} from "./interface/ITaskMgt.sol";
+import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
 
 /**
  * @title FeeMgt
