@@ -94,6 +94,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             operatorId = BN254.hashG1Point(params.pubkeyG1);
             // Handle the case where operatorId is not register
             registryCoordinator.registerOperator(
+                msg.sender,
                 quorumNumbers,
                 socket,
                 params,
