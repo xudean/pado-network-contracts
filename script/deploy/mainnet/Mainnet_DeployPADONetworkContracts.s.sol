@@ -89,7 +89,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         vm.stopBroadcast();
 
-        return (workerMgt,feeMgt,dataMgt,taskMgt, proxyAdmin);
+        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin);
     }
 
     /**
@@ -105,7 +105,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         registryCoordinator = PADORegistryCoordinator(
             stdJson.readAddress(config_data, ".addresses.registryCoordinator")
         );
-        console.log("registryCoordinator is %s",address(registryCoordinator));
+        console.log("registryCoordinator is %s", address(registryCoordinator));
         //workerMgt
         workerMgt = WorkerMgt(
             address(
@@ -144,11 +144,13 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         //taskMgt
         taskMgt = TaskMgt(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(emptyContract),
-                    address(proxyAdmin),
-                    ""
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
                 )
             )
         );
@@ -193,8 +195,12 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             abi.encodeWithSelector(TaskMgt.initialize.selector, dataMgt, feeMgt)
         );
         console.log("upgrade taskMgt");
-        console.log("registryCoordinator is:%s,owner is:%s",address(registryCoordinator),registryCoordinator.owner());
-        console.log("workerMgt is:%s",address(workerMgt));
+        console.log(
+            "registryCoordinator is:%s,owner is:%s",
+            address(registryCoordinator),
+            registryCoordinator.owner()
+        );
+        console.log("workerMgt is:%s", address(workerMgt));
         registryCoordinator.setWorkerMgt(workerMgt);
         proxyAdmin.transferOwnership(networkUpgrader);
         console.log("networkUpgrader is:%s", address(networkUpgrader));
@@ -231,7 +237,11 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         );
 
         vm.serializeAddress(deployed_addresses, "taskMgt", address(taskMgt));
-        vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
+        vm.serializeAddress(
+            deployed_addresses,
+            "proxyAdmin",
+            address(proxyAdmin)
+        );
 
         string memory deployed_addresses_output = vm.serializeAddress(
             deployed_addresses,

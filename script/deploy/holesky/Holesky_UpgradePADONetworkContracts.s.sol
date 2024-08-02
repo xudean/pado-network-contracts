@@ -61,8 +61,8 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             stdJson.readAddress(config_data, ".addresses.dataMgt")
         );
         feeMgt = FeeMgt(stdJson.readAddress(config_data, ".addresses.feeMgt"));
-        taskMgt = TaskMgt(
-            stdJson.readAddress(config_data, ".addresses.taskMgt")
+        taskMgt = TaskMgt(payable(
+            stdJson.readAddress(config_data, ".addresses.taskMgt"))
         );
     }
 

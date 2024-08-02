@@ -144,13 +144,13 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         //taskMgt
         taskMgt = TaskMgt(
-            address(
+            payable(address(
                 new TransparentUpgradeableProxy(
                     address(emptyContract),
                     address(proxyAdmin),
                     ""
                 )
-            )
+            ))
         );
 
         console.log("taskMgt proxy deployed");
