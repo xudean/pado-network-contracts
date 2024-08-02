@@ -62,7 +62,7 @@ contract Mainnet_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
         );
         feeMgt = FeeMgt(stdJson.readAddress(config_data, ".addresses.feeMgt"));
         taskMgt = TaskMgt(
-            stdJson.readAddress(config_data, ".addresses.taskMgt")
+            payable(stdJson.readAddress(config_data, ".addresses.taskMgt"))
         );
     }
 
