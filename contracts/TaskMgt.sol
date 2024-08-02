@@ -3,11 +3,12 @@
 
 pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {ITaskMgt, Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo} from "./interface/ITaskMgt.sol";
-import {IDataMgt, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./interface/IDataMgt.sol";
+import {ITaskMgt} from "./interface/ITaskMgt.sol";
+import {Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo, Worker, TaskType, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./types/Common.sol";
+import {IDataMgt} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
-import {Worker, TaskType} from "./types/Common.sol";
+
 /**
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.

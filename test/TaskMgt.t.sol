@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {TestERC20} from "./mock/TestERC20.sol";
 import {TaskMgt} from "../contracts/TaskMgt.sol";
-import {ITaskMgt, TaskStatus, Task} from "../contracts/interface/ITaskMgt.sol";
-import {IDataMgt, DataInfo} from "../contracts/interface/IDataMgt.sol";
-import {IFeeMgt, Allowance, FeeTokenInfo} from "../contracts/interface/IFeeMgt.sol";
-import {EncryptionSchema, PriceInfo, DataMgt} from "../contracts/DataMgt.sol";
+import {ITaskMgt} from "../contracts/interface/ITaskMgt.sol";
+import {IDataMgt} from "../contracts/interface/IDataMgt.sol";
+import {IFeeMgt} from "../contracts/interface/IFeeMgt.sol";
+import {DataMgt} from "../contracts/DataMgt.sol";
 import {ITaskMgtEvents} from "./events/ITaskMgtEvents.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType, Worker} from "../contracts/types/Common.sol";
+import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;

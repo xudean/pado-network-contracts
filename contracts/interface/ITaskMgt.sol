@@ -2,66 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import { ComputingInfoRequest, TaskType } from "../types/Common.sol";
-
-/**
- * @notice A enum representing all task status.
- */
-enum TaskStatus {
-    NEVER_USED,
-    EMPTY_DATA,
-    PENDING,
-    COMPLETED,
-    FAILED
-}
-
-/**
- * @notice A struct representing a single task.
- */
-struct Task {
-    bytes32 taskId; // The UID of the task.
-    TaskType taskType; // The type of the task.
-    bytes consumerPk; // The Public Key of the Network Consumer.
-    string tokenSymbol; // The token symbol of data and computing fee.
-    bytes32 dataId; // The id of the data
-    TaskDataInfo dataInfo; // Data information related to the task.
-    ComputingInfo computingInfo; // Computing information related to the task.
-    uint64 time; // The time of the task submission.
-    TaskStatus status; // The status of the task.
-    address submitter; // The submitter of the task.
-    bytes code; // The task code to run, the field can empty.
-}
-
-/**
- * @notice A struct representing data information related to the task.
- */
-struct TaskDataInfo {
-    bytes dataEncryptionPk; // The data encryption Public Key.
-    uint256 price; // The data pice.
-    address[] dataProviders; // The address array of data providers related to the task.
-    bytes[] data; // Data Providers provides data array. 
-}
-
-/**
- * @notice A struct representing computing information related to the task.
- */
-struct ComputingInfo {
-    uint256 price; // The computing price.
-    uint32 t; // Threshold t.
-    uint32 n; // Threshold n.
-    bytes32[] workerIds; // An array of worker ids that compute the task.
-    bytes[] results; // The workers' results of the task.
-    bytes32[] waitingList; // The workers should report.
-}
-
-/**
- * @notice A struct representing data request information related to the task.
- */
-struct TaskDataInfoRequest {
-    uint256 price; // The data pice.
-    string dataDescription; // Description of the data required.
-    uint32 dataInputAmount; // The amount of data required.
-}
+import { ComputingInfoRequest, TaskType, TaskStatus, Task, TaskDataInfo, ComputingInfo, TaskDataInfoRequest } from "../types/Common.sol";
 
 /**
  * @title ITaskMgt

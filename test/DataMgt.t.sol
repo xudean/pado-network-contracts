@@ -3,9 +3,9 @@
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
-import {DataMgt, DataInfo} from "../contracts/DataMgt.sol";
-import {EncryptionSchema, PriceInfo, DataStatus} from "../contracts/interface/IDataMgt.sol";
+import {DataMgt} from "../contracts/DataMgt.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
+import {DataInfo, PriceInfo, DataStatus, EncryptionSchema} from "../contracts/types/Common.sol";
 
 contract DataMgtTest is MockDeployer {
     bytes32 public registryId;

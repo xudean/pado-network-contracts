@@ -4,11 +4,11 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TestERC20} from "./mock/TestERC20.sol";
-import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.sol";
+import {IFeeMgt} from "../contracts/interface/IFeeMgt.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
-import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
+import {FeeTokenInfo, Allowance, TaskStatus} from "../contracts/types/Common.sol";
 
 contract FeeMgtTest is MockDeployer {
     bytes32 private ETH_HASH;

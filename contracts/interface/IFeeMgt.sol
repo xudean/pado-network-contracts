@@ -1,22 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {TaskStatus, ITaskMgt} from "./ITaskMgt.sol";
-/**
- * @notice A struct representing a fee token symbol and address.
- */
-struct FeeTokenInfo {
-    string symbol; // Fee token symbol.
-    address tokenAddress; // Fee token address.
-    uint256 computingPrice; // computing price.
-}
-/**
- * @notice A struct representing allowance for data user.
- */
-struct Allowance {
-    uint256 free;
-    uint256 locked;
-}
+import {ITaskMgt} from "./ITaskMgt.sol";
+import {Allowance, FeeTokenInfo, TaskStatus} from "../types/Common.sol";
+
 /**
  * @title IFeeMgt
  * @notice FeeMgt - Fee Management interface.
