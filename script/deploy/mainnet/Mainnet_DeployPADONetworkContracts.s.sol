@@ -96,6 +96,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
      * @notice Deploy  middleware contracts
      */
     function _deployPadoNeworkContracts(string memory config_data) internal {
+        uint256 computingPriceForETH = 0;
         proxyAdmin = new ProxyAdmin();
         emptyContract = EmptyContract(
             0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2
@@ -177,7 +178,11 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(feeMgt))),
             address(feeMgtImplementation),
-            abi.encodeWithSelector(FeeMgt.initialize.selector, 0)
+            abi.encodeWithSelector(
+                FeeMgt.initialize.selector,
+                taskMgt,
+                computingPriceForETH
+            )
         );
 
         console.log("upgrade feeMgt");
@@ -185,14 +190,19 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(dataMgt))),
             address(dataMgtImplementation),
-            abi.encodeWithSelector(DataMgt.initialize.selector)
+            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt)
         );
         console.log("upgrade dataMgt");
 
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(taskMgt))),
             address(taskMgtImplementation),
-            abi.encodeWithSelector(TaskMgt.initialize.selector, dataMgt, feeMgt)
+            abi.encodeWithSelector(
+                TaskMgt.initialize.selector,
+                dataMgt,
+                feeMgt,
+                workerMgt
+            )
         );
         console.log("upgrade taskMgt");
         console.log(
