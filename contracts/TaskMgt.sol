@@ -45,13 +45,14 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param dataMgt The data management
      * @param feeMgt The fee management
      * @param workerMgt The worker management
+     * @param contractOwner The owner of the contract
      */
-    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt, IWorkerMgt workerMgt) public initializer {
+    function initialize(IDataMgt dataMgt, IFeeMgt feeMgt, IWorkerMgt workerMgt, address contractOwner) public initializer {
         _dataMgt = dataMgt;
         _feeMgt = feeMgt;
         _workerMgt = workerMgt;
         _taskCount = 0;
-        __Ownable_init();
+        _transferOwnership(contractOwner);
     }
 
     receive() payable external {}

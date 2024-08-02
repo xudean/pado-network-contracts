@@ -32,11 +32,12 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     /**
      * @notice Initialize the data management
      * @param workerMgt The worker management
+     * @param contractOwner The owner of the contract
      */
-    function initialize(IWorkerMgt workerMgt) external initializer {
+    function initialize(IWorkerMgt workerMgt, address contractOwner) external initializer {
         _workerMgt = workerMgt;
         _registryCount = 0;
-        __Ownable_init();
+        _transferOwnership(contractOwner);
     }
 
     /**

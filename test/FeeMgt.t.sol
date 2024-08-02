@@ -27,6 +27,8 @@ contract FeeMgtTest is MockDeployer {
     function addFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
+
+        vm.prank(contractOwner);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);

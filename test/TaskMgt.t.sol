@@ -21,7 +21,7 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
     bytes32 taskId;
     TestERC20 erc20;
-    string private constant TOKEN_SYMBOL = "bETH";
+    string private constant TOKEN_SYMBOL = "tETH";
     address private constant worker_address_0 = address(uint160(uint256(keccak256("worker 0"))));
     address private constant worker_address_1 = address(uint160(uint256(keccak256("worker 1"))));
     address private constant worker_address_2 = address(uint160(uint256(keccak256("worker 2"))));
@@ -30,10 +30,12 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     function setUp() public {
         _deployAll();
 
-        TestERC20 bETH = new TestERC20();
-        bETH.initialize("TEST ETH", "bETH", 18);
-        erc20 = bETH;
-        feeMgt.addFeeToken("bETH", address(bETH), 1);
+        TestERC20 tETH = new TestERC20();
+        tETH.initialize("TEST ETH", "tETH", 18);
+        erc20 = tETH;
+
+        vm.prank(contractOwner);
+        feeMgt.addFeeToken("tETH", address(tETH), 1);
 
         dataId = registerData(TOKEN_SYMBOL);
     }

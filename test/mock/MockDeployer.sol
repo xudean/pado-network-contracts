@@ -31,6 +31,7 @@ contract MockDeployer is Test {
     IFeeMgt feeMgt;
     ITaskMgt taskMgt;
     IWorkerMgt workerMgt;
+    address contractOwner;
 
     mapping(string tokenSymbol => TestERC20 erc20) erc20PerSymbol;
     string[] tokenSymbolList;
@@ -38,7 +39,9 @@ contract MockDeployer is Test {
     function _addOneFeeToken(string memory tokenSymbol) private {
         TestERC20 testToken = new TestERC20();
         testToken.initialize(tokenSymbol, tokenSymbol, 18);
-
+        
+        vm.prank(contractOwner);
+        feeMgt.addFeeToken(tokenSymbol, address(testToken), 1);
         erc20PerSymbol[tokenSymbol] = testToken;
         tokenSymbolList.push(tokenSymbol);
     }
@@ -78,6 +81,7 @@ contract MockDeployer is Test {
     function _deployAll() internal {
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
+        contractOwner = msg.sender;
 
         // WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
         // workerMgt = WorkerMgtMock(
@@ -102,7 +106,7 @@ contract MockDeployer is Test {
                     abi.encodeWithSelector(
                         WorkerMgt.initialize.selector,
                         registryCoordinator,
-                        address(this)
+                        address(contractOwner)
                     )
                 )
             )
@@ -126,7 +130,8 @@ contract MockDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         DataMgt.initialize.selector,
-                        workerMgt
+                        workerMgt,
+                        contractOwner
                     )
                 )
             )
@@ -142,20 +147,28 @@ contract MockDeployer is Test {
                         TaskMgt.initialize.selector,
                         dataMgt,
                         feeMgt,
-                        workerMgt
+                        workerMgt,
+                        contractOwner
                     )
                 )
             )
         );
 
         IFeeMgt feeMgtImplementation = new FeeMgt();
-        proxyAdmin.upgrade(
+        proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(feeMgt))),
-            address(feeMgtImplementation)
+            address(feeMgtImplementation),
+            abi.encodeWithSelector(
+                FeeMgt.initialize.selector,
+                taskMgt,
+                1,
+                contractOwner
+            )
         );
 
-        FeeMgt(address(feeMgt)).initialize(taskMgt, 1);
+        // FeeMgt(address(feeMgt)).initialize(taskMgt, 1, );
 
+        vm.prank(contractOwner);
         feeMgt.setTaskMgt(taskMgt);
 
         _addFeeTokens();

@@ -30,6 +30,13 @@ interface IFeeMgt {
         uint256 amount
     );
 
+    // emit in unlock
+    event FeeUnlocked(
+        bytes32 indexed taskId,
+        string tokenSymbol,
+        uint256 amount
+    );
+
     // emit in settle
     event FeeSettled(
         bytes32 indexed taskId,
@@ -68,6 +75,21 @@ interface IFeeMgt {
         address submitter,
         string calldata tokenSymbol,
         uint256 toLockAmount 
+    ) external returns (bool);
+
+    /**
+     * @notice TaskMgt contract request unlocking fee.
+     * @param taskId The task id.
+     * @param submitter The submitter of the task.
+     * @param tokenSymbol The fee token symbol.
+     * @param toUnlockAmount The amount of fee to unlock.
+     * @return Return true if the settlement is successful.
+     */
+    function unlock(
+        bytes32 taskId,
+        address submitter,
+        string calldata tokenSymbol,
+        uint256 toUnlockAmount
     ) external returns (bool);
 
     /**

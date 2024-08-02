@@ -40,11 +40,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @notice Initial FeeMgt.
      * @param taskMgt The TaskMgt
      * @param computingPriceForETH The computing price for ETH.
+     * @param contractOwner The owner of the contract
      */
-    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH) public initializer {
+    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
         _taskMgt = taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
-        __Ownable_init();
+        _transferOwnership(contractOwner);
     }
 
     /**
@@ -102,6 +103,34 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         emit FeeLocked(taskId, tokenSymbol, toLockAmount);
         return true;
     }
+
+    /**
+     * @notice TaskMgt contract request unlocking fee.
+     * @param taskId The task id.
+     * @param submitter The submitter of the task.
+     * @param tokenSymbol The fee token symbol.
+     * @param toUnlockAmount The amount of fee to unlock.
+     * @return Return true if the settlement is successful.
+     */
+    function unlock(
+        bytes32 taskId,
+        address submitter,
+        string calldata tokenSymbol,
+        uint256 toUnlockAmount
+    ) external onlyTaskMgt returns (bool) {
+        require(isSupportToken(tokenSymbol), "FeeMgt.unlock: not supported token");
+
+        Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
+        require(allowance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked allowance");
+
+        allowance.free += toUnlockAmount;
+        allowance.locked -= toUnlockAmount;
+        _lockedAmountForTaskId[taskId] -= toUnlockAmount;
+
+        emit FeeUnlocked(taskId, tokenSymbol, toUnlockAmount);
+        return true;
+    }
+
 
     /**
      * @notice TaskMgt contract request settlement fee.

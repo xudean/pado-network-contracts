@@ -43,8 +43,7 @@ enum WorkerStatus {
  * @notice A enum representing all task type
  */
 enum TaskType {
-	NEVER_USED,
-	DATA_SHARING
+    DATA_SHARING
 }
 
 /**
@@ -59,7 +58,6 @@ struct PriceInfo {
  * @notice A enum representing data staus
  */
 enum DataStatus {
-    NEVER_USED,
     REGISTERING,
     REGISTERED,
     DELETED
@@ -108,7 +106,6 @@ struct Allowance {
  * @notice A enum representing all task status.
  */
 enum TaskStatus {
-    NEVER_USED,
     EMPTY_DATA,
     PENDING,
     COMPLETED,
