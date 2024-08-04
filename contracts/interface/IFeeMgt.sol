@@ -1,22 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-import {TaskStatus, ITaskMgt} from "./ITaskMgt.sol";
-/**
- * @notice A struct representing a fee token symbol and address.
- */
-struct FeeTokenInfo {
-    string symbol; // Fee token symbol.
-    address tokenAddress; // Fee token address.
-    uint256 computingPrice; // computing price.
-}
-/**
- * @notice A struct representing allowance for data user.
- */
-struct Allowance {
-    uint256 free;
-    uint256 locked;
-}
+import {ITaskMgt} from "./ITaskMgt.sol";
+import {Allowance, FeeTokenInfo, TaskStatus} from "../types/Common.sol";
+
 /**
  * @title IFeeMgt
  * @notice FeeMgt - Fee Management interface.
@@ -36,8 +23,22 @@ interface IFeeMgt {
         uint256 amount
     );
 
+    // emit in withdraw
+    event TokenWithdrawn(
+        address to,
+        string tokenSymbol,
+        uint256 amount
+    );
+
     // emit in lock
     event FeeLocked(
+        bytes32 indexed taskId,
+        string tokenSymbol,
+        uint256 amount
+    );
+
+    // emit in unlock
+    event FeeUnlocked(
         bytes32 indexed taskId,
         string tokenSymbol,
         uint256 amount
@@ -69,6 +70,18 @@ interface IFeeMgt {
     ) payable external;
 
     /**
+     * @notice TaskMgt contract request transfer tokens.
+     * @param to The address to which token is withdrawn.
+     * @param tokenSymbol The token symbol
+     * @param amount The amount of tokens to be transfered
+     */
+    function withdrawToken(
+        address to,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external;
+
+    /**
      * @notice TaskMgt contract request locking fee.
      * @param taskId The task id.
      * @param submitter The submitter of the task.
@@ -81,6 +94,21 @@ interface IFeeMgt {
         address submitter,
         string calldata tokenSymbol,
         uint256 toLockAmount 
+    ) external returns (bool);
+
+    /**
+     * @notice TaskMgt contract request unlocking fee.
+     * @param taskId The task id.
+     * @param submitter The submitter of the task.
+     * @param tokenSymbol The fee token symbol.
+     * @param toUnlockAmount The amount of fee to unlock.
+     * @return Return true if the settlement is successful.
+     */
+    function unlock(
+        bytes32 taskId,
+        address submitter,
+        string calldata tokenSymbol,
+        uint256 toUnlockAmount
     ) external returns (bool);
 
     /**

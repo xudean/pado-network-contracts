@@ -4,11 +4,11 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TestERC20} from "./mock/TestERC20.sol";
-import {IFeeMgt, FeeTokenInfo, Allowance} from "../contracts/interface/IFeeMgt.sol";
+import {IFeeMgt} from "../contracts/interface/IFeeMgt.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
-import {TaskStatus} from "../contracts/interface/ITaskMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
+import {FeeTokenInfo, Allowance, TaskStatus} from "../contracts/types/Common.sol";
 
 contract FeeMgtTest is MockDeployer {
     bytes32 private ETH_HASH;
@@ -27,6 +27,8 @@ contract FeeMgtTest is MockDeployer {
     function addFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
+
+        vm.prank(contractOwner);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
@@ -63,7 +65,6 @@ contract FeeMgtTest is MockDeployer {
     }
 
     function test_transferToken_ETH() public {
-        // payable(address(taskMgt)).transfer(50);
         (bool b, ) = payable(address(taskMgt)).call{value: 50}(new bytes(0));
         require(b, "transfer error");
 
@@ -108,6 +109,30 @@ contract FeeMgtTest is MockDeployer {
         else {
             test_transferToken_TEST();
         }
+    }
+
+    function test_withdrawToken(string memory tokenSymbol) internal {
+        test_transferToken(tokenSymbol);
+        
+        uint256 oldSenderBalance = getBalance(msg.sender, tokenSymbol);
+        uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
+
+        vm.prank(address(taskMgt));
+        feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
+
+        uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
+        uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
+
+        assertEq(oldSenderBalance + 5, senderBalance, "sender balance error");
+        assertEq(oldFeeMgtBalance - 5, feeMgtBalance, "feemgt balance error");
+    }
+
+    function test_withdrawToken_ETH() public {
+        test_withdrawToken("ETH");
+    }
+
+    function test_withdrawToken_TEST() public {
+        test_withdrawToken("TEST");
     }
 
     struct SubmittionInfo {
@@ -165,6 +190,32 @@ contract FeeMgtTest is MockDeployer {
     }
     function test_lock_TEST() public {
         test_lock("TEST");
+    }
+
+    function test_unlock(string memory tokenSymbol) internal {
+        test_lock(tokenSymbol);
+        FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
+        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        vm.prank(address(taskMgt));
+        feeMgt.unlock(
+            info.taskId,
+            info.submitter,
+            info.tokenSymbol,
+            lockedAmount
+        );
+
+        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        assertEq(oldAllowance.free + lockedAmount, allowance.free, "allowance.free change error");
+        assertEq(oldAllowance.locked - lockedAmount, allowance.locked, "allowance.locked change error");
+    }
+
+    function test_unlock_ETH() public {
+        test_unlock("ETH");
+    }
+    function test_unlock_TEST() public {
+        test_unlock("TEST");
     }
 
     function test_settle(string memory tokenSymbol) internal {

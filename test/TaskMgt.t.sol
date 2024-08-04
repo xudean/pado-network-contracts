@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {TestERC20} from "./mock/TestERC20.sol";
 import {TaskMgt} from "../contracts/TaskMgt.sol";
-import {ITaskMgt, TaskStatus, Task} from "../contracts/interface/ITaskMgt.sol";
-import {IDataMgt, DataInfo} from "../contracts/interface/IDataMgt.sol";
-import {IFeeMgt, Allowance, FeeTokenInfo} from "../contracts/interface/IFeeMgt.sol";
-import {EncryptionSchema, PriceInfo, DataMgt} from "../contracts/DataMgt.sol";
+import {ITaskMgt} from "../contracts/interface/ITaskMgt.sol";
+import {IDataMgt} from "../contracts/interface/IDataMgt.sol";
+import {IFeeMgt} from "../contracts/interface/IFeeMgt.sol";
+import {DataMgt} from "../contracts/DataMgt.sol";
 import {ITaskMgtEvents} from "./events/ITaskMgtEvents.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,13 +15,13 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType} from "../contracts/types/Common.sol";
+import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
     bytes32 taskId;
     TestERC20 erc20;
-    string private constant TOKEN_SYMBOL = "bETH";
+    string private constant TOKEN_SYMBOL = "tETH";
     address private constant worker_address_0 = address(uint160(uint256(keccak256("worker 0"))));
     address private constant worker_address_1 = address(uint160(uint256(keccak256("worker 1"))));
     address private constant worker_address_2 = address(uint160(uint256(keccak256("worker 2"))));
@@ -30,10 +30,12 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     function setUp() public {
         _deployAll();
 
-        TestERC20 bETH = new TestERC20();
-        bETH.initialize("TEST ETH", "bETH", 18);
-        erc20 = bETH;
-        feeMgt.addFeeToken("bETH", address(bETH), 1);
+        TestERC20 tETH = new TestERC20();
+        tETH.initialize("TEST ETH", "tETH", 18);
+        erc20 = tETH;
+
+        vm.prank(contractOwner);
+        feeMgt.addFeeToken("tETH", address(tETH), 1);
 
         dataId = registerData(TOKEN_SYMBOL);
     }
@@ -129,8 +131,9 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         workerIds = dataMgt.getDataById(dataId_).workerIds;
         workerOwners = new address[](workerIds.length);
 
+        Worker[] memory workers = workerMgt.getWorkersByIds(workerIds);
         for (uint256 i = 0; i < workerIds.length; i++) {
-            workerOwners[i] = workerMgt.getWorkerById(workerIds[i]).owner;
+            workerOwners[i] = workers[i].owner;
         }
     }
 

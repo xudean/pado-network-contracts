@@ -4,8 +4,9 @@ pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IFeeMgt, FeeTokenInfo, Allowance} from "./interface/IFeeMgt.sol";
-import {ITaskMgt, TaskStatus} from "./interface/ITaskMgt.sol";
+import {IFeeMgt} from "./interface/IFeeMgt.sol";
+import {ITaskMgt} from "./interface/ITaskMgt.sol";
+import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
 
 /**
  * @title FeeMgt
@@ -39,11 +40,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @notice Initial FeeMgt.
      * @param taskMgt The TaskMgt
      * @param computingPriceForETH The computing price for ETH.
+     * @param contractOwner The owner of the contract
      */
-    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH) public initializer {
+    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
         _taskMgt = taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
-        __Ownable_init();
+        _transferOwnership(contractOwner);
     }
 
     /**
@@ -56,12 +58,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         string calldata tokenSymbol,
         uint256 amount
     ) payable external onlyTaskMgt {
-        require(isSupportToken(tokenSymbol), "not supported token");
+        require(isSupportToken(tokenSymbol), "FeeMgt.transferToken: not supported token");
         if (_isETH(tokenSymbol)) {
-            require(amount == msg.value, "numTokens is not correct");
+            require(amount == msg.value, "FeeMgt.transferToken: numTokens is not correct");
         }
         else {
-            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "tokenSymbol is not supported");
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "FeeMgt.transferToken: tokenSymbol is not supported");
             
             address tokenAddress = _tokenAddressForSymbol[tokenSymbol];
             IERC20(tokenAddress).transferFrom(from, address(this), amount);
@@ -72,6 +74,36 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         allowance.free += amount;
 
         emit TokenTransfered(from, tokenSymbol, amount);
+    }
+
+    /**
+     * @notice TaskMgt contract request transfer tokens.
+     * @param to The address to which token is withdrawn.
+     * @param tokenSymbol The token symbol
+     * @param amount The amount of tokens to be transfered
+     */
+    function withdrawToken(
+        address to,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) external {
+        require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
+
+        Allowance storage allowance = _allowanceForDataUser[to][tokenSymbol];
+        require(allowance.free >= amount, "FeeMgt.withdrawToken: insufficient free allowance");
+        allowance.free -= amount;
+        if (_isETH(tokenSymbol)) {
+            (bool res, )  = payable(address(to)).call{value: amount}(new bytes(0));
+            require(res, "FeeMgt.withdrawToken: call error");
+        }
+        else {
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "FeeMgt.transferToken: tokenSymbol is not supported");
+            
+            address tokenAddress = _tokenAddressForSymbol[tokenSymbol];
+            IERC20(tokenAddress).transfer(to, amount);
+        }
+
+        emit TokenWithdrawn(to, tokenSymbol, amount);
     }
 
     /**
@@ -88,11 +120,11 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         string calldata tokenSymbol,
         uint256 toLockAmount 
     ) external onlyTaskMgt returns (bool) {
-        require(isSupportToken(tokenSymbol), "not supported token");
+        require(isSupportToken(tokenSymbol), "FeeMgt.lock: not supported token");
 
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
 
-        require(allowance.free >= toLockAmount, "Insufficient free allowance");
+        require(allowance.free >= toLockAmount, "FeeMgt.lock: Insufficient free allowance");
 
         allowance.free -= toLockAmount;
         allowance.locked += toLockAmount;
@@ -101,6 +133,34 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         emit FeeLocked(taskId, tokenSymbol, toLockAmount);
         return true;
     }
+
+    /**
+     * @notice TaskMgt contract request unlocking fee.
+     * @param taskId The task id.
+     * @param submitter The submitter of the task.
+     * @param tokenSymbol The fee token symbol.
+     * @param toUnlockAmount The amount of fee to unlock.
+     * @return Return true if the settlement is successful.
+     */
+    function unlock(
+        bytes32 taskId,
+        address submitter,
+        string calldata tokenSymbol,
+        uint256 toUnlockAmount
+    ) external onlyTaskMgt returns (bool) {
+        require(isSupportToken(tokenSymbol), "FeeMgt.unlock: not supported token");
+
+        Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
+        require(allowance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked allowance");
+
+        allowance.free += toUnlockAmount;
+        allowance.locked -= toUnlockAmount;
+        _lockedAmountForTaskId[taskId] -= toUnlockAmount;
+
+        emit FeeUnlocked(taskId, tokenSymbol, toUnlockAmount);
+        return true;
+    }
+
 
     /**
      * @notice TaskMgt contract request settlement fee.
@@ -122,9 +182,9 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external onlyTaskMgt returns (bool) {
-        require(isSupportToken(tokenSymbol), "not supported token");
+        require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
         uint256 computingPrice = _computingPriceForSymbol[tokenSymbol];
-        require(computingPrice > 0, "computing price is not set");
+        require(computingPrice > 0, "FeeMgt.settle: computing price is not set");
 
         // TODO
         if (taskResultStatus == TaskStatus.COMPLETED) {}
@@ -135,8 +195,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
         uint256 expectedAllowance = computingPrice * workerOwners.length + dataPrice * dataProviders.length;
 
-        require(expectedAllowance <= allowance.locked, "insufficient locked allowance");
-        require(lockedAmount >= expectedAllowance, "locked not enough");
+        require(expectedAllowance <= allowance.locked, "FeeMgt.settle: insufficient locked allowance");
+        require(lockedAmount >= expectedAllowance, "FeeMgt.settle: locked not enough");
 
         if (expectedAllowance > 0) {
             _settle(
@@ -180,8 +240,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @return Returns true if the adding is successful.
      */
     function _addFeeToken(string memory tokenSymbol, address tokenAddress, uint256 computingPrice) internal returns (bool) {
-        require(_tokenAddressForSymbol[tokenSymbol] == address(0), "token symbol already exists");
-        require(_computingPriceForSymbol[tokenSymbol] == 0, "computing price already exists");
+        require(_tokenAddressForSymbol[tokenSymbol] == address(0), "FeeMgt._addFeeToken: token symbol already exists");
+        require(_computingPriceForSymbol[tokenSymbol] == 0, "FeeMgt._addFeeToken: computing price already exists");
 
         _tokenAddressForSymbol[tokenSymbol] = tokenAddress;
         _computingPriceForSymbol[tokenSymbol] = computingPrice;
@@ -226,7 +286,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         });
 
         if (!_isETH(tokenSymbol)) {
-            require(info.tokenAddress != address(0), "fee token does not exist");
+            require(info.tokenAddress != address(0), "FeeMgt.getFeeTokenBySymbol: fee token does not exist");
         }
         return info;
     }
@@ -291,7 +351,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             }
         }
         else {
-            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "can not find token address");
+            require(_tokenAddressForSymbol[tokenSymbol] != address(0), "FeeMgt._settle: can not find token address");
             IERC20 tokenAddress = IERC20(_tokenAddressForSymbol[tokenSymbol]);
 
             for (uint256 i = 0; i < workerOwners.length; i++) {
@@ -318,7 +378,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     }
 
     modifier onlyTaskMgt() {
-        require(msg.sender == address(_taskMgt), "only task mgt allowed to call");
+        require(msg.sender == address(_taskMgt), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
         _;
     }
 }

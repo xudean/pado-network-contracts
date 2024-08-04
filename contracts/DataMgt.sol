@@ -3,9 +3,10 @@
 pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {IDataMgt, DataInfo, PriceInfo, EncryptionSchema, DataStatus} from "./interface/IDataMgt.sol"; 
+import {IDataMgt} from "./interface/IDataMgt.sol"; 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
-import {Worker} from "./types/Common.sol";
+import {Worker, DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "./types/Common.sol";
+
 /**
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
@@ -31,11 +32,12 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     /**
      * @notice Initialize the data management
      * @param workerMgt The worker management
+     * @param contractOwner The owner of the contract
      */
-    function initialize(IWorkerMgt workerMgt) external initializer {
+    function initialize(IWorkerMgt workerMgt, address contractOwner) external initializer {
         _workerMgt = workerMgt;
         _registryCount = 0;
-        __Ownable_init();
+        _transferOwnership(contractOwner);
     }
 
     /**
@@ -54,13 +56,14 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
             encryptionSchema.t,
             encryptionSchema.n
         );
-        require(res, "select multiple public key workers error");
+        require(res, "DataMgt.prepareRegistry: select multiple public key workers error");
         bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
-        require(workerIds.length == encryptionSchema.n, "get multiple public key workers error");
+        require(workerIds.length == encryptionSchema.n, "DataMgt.prepareRegistry: get multiple public key workers error");
         
+        Worker[] memory workers = _workerMgt.getWorkersByIds(workerIds);
         publicKeys = new bytes[](workerIds.length);
         for (uint256 i = 0; i < workerIds.length; i++) {
-            publicKeys[i] = _workerMgt.getWorkerById(workerIds[i]).publicKey;
+            publicKeys[i] = workers[i].publicKey;
         }
 
         DataInfo memory dataInfo = DataInfo({
@@ -94,7 +97,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
     ) external returns (bytes32) {
-        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "invalid dataId");
+        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "DataMgt.register: invalid dataId");
 
         DataInfo storage dataInfo = _dataInfos[dataId];
 
@@ -135,7 +138,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     function getDataById(
         bytes32 dataId
     ) external view returns (DataInfo memory) {
-        require(_dataInfos[dataId].dataId != 0, "data not exist");
+        require(_dataInfos[dataId].dataId == dataId, "DataMgt.getDataById: data does not exist");
 
         return _dataInfos[dataId];
     }
@@ -148,8 +151,8 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         bytes32 dataId
     ) external {
         DataInfo storage dataInfo = _dataInfos[dataId];
-        require(dataInfo.dataId != 0, "data not exist");
-        require(dataInfo.status != DataStatus.DELETED, "data already deleted");
+        require(dataInfo.dataId == dataId, "DataMgt.deleteDataById: data does not exist");
+        require(dataInfo.status != DataStatus.DELETED, "DataMgt.deleteDataById: data already deleted");
 
         dataInfo.status = DataStatus.DELETED;
 

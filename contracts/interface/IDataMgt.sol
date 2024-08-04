@@ -1,46 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
-/**
- * @notice A struct representing a concrete price of a piece of data
- */
-struct PriceInfo {
-    string tokenSymbol; // The token symbol of price
-    uint256 price;  // The price of data 
-}
-
-/**
- * @notice A enum representing data staus
- */
-enum DataStatus {
-    NEVER_USED,
-    REGISTERING,
-    REGISTERED,
-    DELETED
-}
-
-/**
- * @notice A struct representing a piece of data
- */
-struct EncryptionSchema {
-    uint32 t; // threshold
-    uint32 n; // total amount of nodes
-}
-
-/**
- * @notice A struct representing a piece of data
- */
-struct DataInfo {
-    bytes32 dataId; // The identifier of the data
-    string dataTag; // The tag of the data
-    PriceInfo priceInfo; // The price of the data
-    bytes dataContent; // The content of the data
-    EncryptionSchema encryptionSchema; // The encryption schema
-    bytes32[] workerIds; // The workerIds of workers participanting in  encrypting the data
-    uint64 registeredTimestamp; // The timestamp at which the data was registered
-    address owner; // The owner of the data
-    DataStatus status; // The status of the data
-}
+import {DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "../types/Common.sol";
 
 /**
  * @title IDataMgt
