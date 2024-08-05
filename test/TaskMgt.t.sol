@@ -74,9 +74,6 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function submitTask(string memory tokenSymbol) internal {
         bytes memory consumerPk = bytes("consumerPk");
-        // vm.expectEmit(true, true, true, true);
-        emit WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
-
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
         assertEq(oldAllowance.locked, 0, "oldAllowance.locked not correct");
@@ -88,6 +85,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.prank(address(msg.sender));
         erc20.approve(address(feeMgt), feeAmount);
         vm.prank(address(msg.sender));
+        vm.expectEmit(false, false, false, false);
+        emit TaskDispatched(taskId, new bytes32[](0)); 
         taskId = taskMgt.submitTask{value: feeAmount}(
             TaskType.DATA_SHARING,
             consumerPk,
@@ -123,6 +122,12 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
         for (uint256 i = 0; i < workerIds.length; i++) {
             vm.prank(workerOwners[i]);
+            if (i == workerIds.length - 1) {
+                vm.expectEmit(true, true, true, true);
+                emit TaskCompleted(taskId);
+            }
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
             taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
         }
     }

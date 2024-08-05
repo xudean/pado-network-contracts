@@ -6,8 +6,9 @@ import {Test, console} from "forge-std/Test.sol";
 import {DataMgt} from "../contracts/DataMgt.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
 import {DataInfo, PriceInfo, DataStatus, EncryptionSchema} from "../contracts/types/Common.sol";
+import {IDataMgtEvents} from "./events/IDataMgtEvents.sol";
 
-contract DataMgtTest is MockDeployer {
+contract DataMgtTest is MockDeployer, IDataMgtEvents {
     bytes32 public registryId;
 
     function setUp() public {
@@ -16,6 +17,8 @@ contract DataMgtTest is MockDeployer {
 
     function test_Registry() public {
         bytes[] memory publicKeys;
+        vm.expectEmit(false, true, true, false);
+        emit DataPrepareRegistry(registryId, publicKeys);
         (registryId, publicKeys) = dataMgt.prepareRegistry(EncryptionSchema({
             t: 2,
             n: 3
@@ -26,12 +29,10 @@ contract DataMgtTest is MockDeployer {
             price: 2
         });
 
-        bytes memory dataContent = new bytes(4);
-        dataContent[0] = bytes1(uint8(0x74));
-        dataContent[1] = bytes1(uint8(0x65));
-        dataContent[2] = bytes1(uint8(0x73));
-        dataContent[3] = bytes1(uint8(0x74));
+        bytes memory dataContent = bytes("test");
 
+        vm.expectEmit(true, true, true, true);
+        emit DataRegistered(registryId);
         bytes32 dataId = dataMgt.register(
             registryId,
             "data tag",
@@ -59,6 +60,8 @@ contract DataMgtTest is MockDeployer {
     function test_deleteDataById() public {
         test_Registry();
 
+        vm.expectEmit(true, true, true, true);
+        emit DataDeleted(registryId);
         dataMgt.deleteDataById(registryId);
         DataInfo memory dataInfo = dataMgt.getDataById(registryId);
 
