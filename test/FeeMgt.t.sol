@@ -215,8 +215,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         feeMgt.unlock(
             info.taskId,
             info.submitter,
-            info.tokenSymbol,
-            lockedAmount
+            info.tokenSymbol
         );
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);

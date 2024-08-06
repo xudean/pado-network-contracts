@@ -15,7 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task} from "../contracts/types/Common.sol";
+import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task, TaskReportStatus} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
@@ -111,6 +111,9 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
             Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(workerIds[i]);
             assertEq(tasks.length, 1);
             assertEq(tasks[0].status == TaskStatus.PENDING, true);
+            
+            TaskReportStatus reportStatus = taskMgt.getTaskReportStatus(tasks[0].taskId);
+            require(reportStatus == TaskReportStatus.WAITING, "task report status error");
         }
     }
 
