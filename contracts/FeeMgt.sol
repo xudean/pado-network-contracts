@@ -215,7 +215,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
             allowance.locked -= toReturnAmount;
             allowance.free += toReturnAmount;
-
+            
+            emit FeeUnlocked(taskId, tokenSymbol, toReturnAmount);
         }
 
         return true;

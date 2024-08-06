@@ -135,6 +135,44 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         }
     }
 
+    function test_reportResult_LessT() public {
+        test_submitTask();
+
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        require(workerIds.length == workerOwners.length, "the length of worker id and worker owner not equal");
+
+        for (uint256 i = 0; i < workerIds.length - 2; i++) {
+            vm.prank(workerOwners[i]);
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
+            taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
+        }
+        vm.prank(address(msg.sender));
+        vm.warp(block.timestamp + 70);
+        vm.expectEmit(true, true, true, true);
+        emit TaskFailed(taskId);
+        taskMgt.updateTask(taskId);
+    }
+
+    function test_reportResult_GreaterT() public {
+        test_submitTask();
+
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        require(workerIds.length == workerOwners.length, "the length of worker id and worker owner not equal");
+
+        for (uint256 i = 0; i < workerIds.length - 1; i++) {
+            vm.prank(workerOwners[i]);
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
+            taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
+        }
+        vm.prank(address(msg.sender));
+        vm.warp(block.timestamp + 70);
+        vm.expectEmit(true, true, true, true);
+        emit TaskCompleted(taskId);
+        taskMgt.updateTask(taskId);
+    }
+
     function _getWorkerInfoByDataId(bytes32 dataId_) internal view returns (bytes32[] memory workerIds, address[] memory workerOwners) {
         workerIds = dataMgt.getDataById(dataId_).workerIds;
         workerOwners = new address[](workerIds.length);

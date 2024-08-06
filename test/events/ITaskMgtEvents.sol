@@ -11,4 +11,7 @@ interface ITaskMgtEvents {
 
     // emit when task completed
     event TaskCompleted(bytes32 indexed taskId);
+
+    // emit when task failed
+    event TaskFailed(bytes32 indexed taskId);
 }
