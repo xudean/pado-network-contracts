@@ -113,6 +113,15 @@ enum TaskStatus {
 }
 
 /**
+ * @notice A enum representing all task report status.
+ */
+enum TaskReportStatus {
+    COMPLETED,
+    WAITING,
+    TIMEOUT
+}
+
+/**
  * @notice A struct representing a single task.
  */
 struct Task {

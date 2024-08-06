@@ -101,14 +101,12 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param toUnlockAmount The amount of fee to unlock.
      * @return Return true if the settlement is successful.
      */
     function unlock(
         bytes32 taskId,
         address submitter,
-        string calldata tokenSymbol,
-        uint256 toUnlockAmount
+        string calldata tokenSymbol
     ) external returns (bool);
 
     /**

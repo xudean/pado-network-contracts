@@ -139,16 +139,16 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param toUnlockAmount The amount of fee to unlock.
      * @return Return true if the settlement is successful.
      */
     function unlock(
         bytes32 taskId,
         address submitter,
-        string calldata tokenSymbol,
-        uint256 toUnlockAmount
+        string calldata tokenSymbol
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.unlock: not supported token");
+        uint256 toUnlockAmount = _lockedAmountForTaskId[taskId];
+        require(toUnlockAmount > 0, "FeeMgt.unlock: locked amount is zero");
 
         Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
         require(allowance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked allowance");
@@ -215,7 +215,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
             allowance.locked -= toReturnAmount;
             allowance.free += toReturnAmount;
-
+            
+            emit FeeUnlocked(taskId, tokenSymbol, toReturnAmount);
         }
 
         return true;

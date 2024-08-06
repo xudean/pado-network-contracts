@@ -4,7 +4,7 @@
 pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {ITaskMgt} from "./interface/ITaskMgt.sol";
-import {Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo, Worker, TaskType, PriceInfo, DataStatus, DataInfo, EncryptionSchema} from "./types/Common.sol";
+import {Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatus, ComputingInfo, Worker, TaskType, PriceInfo, DataStatus, DataInfo, EncryptionSchema, TaskReportStatus} from "./types/Common.sol";
 import {IDataMgt} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
@@ -22,6 +22,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
     // The worker management
     IWorkerMgt public _workerMgt;
+
+    // TIMEOUT
+    uint64 public _taskTimeout;
 
     // taskId => task
     mapping(bytes32 taskId => Task task) private _allTasks;
@@ -52,6 +55,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         _feeMgt = feeMgt;
         _workerMgt = workerMgt;
         _taskCount = 0;
+        _taskTimeout = 60;
         _transferOwnership(contractOwner);
     }
 
@@ -202,17 +206,57 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
         address[] memory dataProviders = new address[](1);
         dataProviders[0] = dataInfo.owner;
+        
+        ComputingInfo storage computingInfo = task.computingInfo;
+        bytes32[] memory workerIds;
+        if (computingInfo.waitingList.length == 0) {
+            workerIds = computingInfo.workerIds;
+        }
+        else {
+            uint256 workerIdLength = computingInfo.workerIds.length - computingInfo.waitingList.length;
+            workerIds = new bytes32[](workerIdLength);
+            uint256 workerIndex = 0;
+            for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
+                if (_find(computingInfo.workerIds[i], computingInfo.waitingList) == type(uint256).max) {
+                    workerIds[workerIndex] = computingInfo.workerIds[i];
+                    workerIndex++;
+                }
+            }
+        }
+
 
         _feeMgt.settle(
             task.taskId,
             task.status,
             task.submitter,
             task.tokenSymbol,
-            _getWorkerOwners(task.computingInfo.workerIds),
+            _getWorkerOwners(workerIds),
             dataInfo.priceInfo.price,
             dataProviders
         );
         emit TaskCompleted(task.taskId);
+    }
+
+    /**
+     * @notice remove pendingTaskIds and unlock fee
+     * @param taskId The task id
+     */
+    function _onTaskFailed(bytes32 taskId) internal {
+        Task storage task = _allTasks[taskId];
+        DataInfo memory dataInfo = _dataMgt.getDataById(task.dataId);
+
+        uint256 pendingIndex = _find(taskId, _pendingTaskIds);
+        _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
+        _pendingTaskIds.pop();
+
+        task.status = TaskStatus.FAILED;
+
+        _feeMgt.unlock(
+            task.taskId,
+            task.submitter,
+            task.tokenSymbol
+        );
+        emit TaskFailed(task.taskId);
     }
 
     /**
@@ -254,6 +298,30 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         emit ResultReported(taskId, msg.sender);
 
         return true;
+    }
+
+    /**
+     * @notice Update task
+     * @param taskId The task id.
+     * @return Return task status.
+     */
+    function updateTask(bytes32 taskId) external returns (TaskStatus) {
+        Task storage task = _allTasks[taskId];
+        require(task.status == TaskStatus.PENDING, "TaskMgt.updateTask: task status is not pending");
+
+        uint64 currentTime = uint64(block.timestamp);
+        require(currentTime >= task.time + _taskTimeout, "TaskMgt.updateTask: task is not timeout");
+
+
+        DataInfo memory dataInfo = _dataMgt.getDataById(task.dataId);
+        EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
+        if (encryptionSchema.n - task.computingInfo.waitingList.length >= encryptionSchema.t) {
+            _onTaskCompleted(taskId);
+        }
+        else {
+            _onTaskFailed(taskId);
+        }
+        return task.status;
     }
 
     /**
@@ -301,6 +369,26 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         require(task.status == TaskStatus.COMPLETED, "TaskMgt.getCompletedTaskById: task is not completed");
         return task;
     }
+
+   /**
+    * @notice Get task report status.
+    * @param taskId The task id.
+    * @return Returns The task report status.
+    */
+   function getTaskReportStatus(bytes32 taskId) external view returns (TaskReportStatus) {
+       Task storage task = _allTasks[taskId];
+       require(task.taskId == taskId, "TaskMgt.getTaskReportStatsu: task does not exist");
+
+       if (task.status == TaskStatus.COMPLETED || task.status == TaskStatus.FAILED) {
+           return TaskReportStatus.COMPLETED;
+       }
+
+       uint64 currentTime = uint64(block.timestamp);
+       if (currentTime >= task.time + _taskTimeout) {
+           return TaskReportStatus.TIMEOUT;
+       }
+       return TaskReportStatus.WAITING;
+   }
 
     /**
      * @notice Set a data verification contract of a task type.

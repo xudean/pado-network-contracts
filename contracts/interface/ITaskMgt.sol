@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import { ComputingInfoRequest, TaskType, TaskStatus, Task, TaskDataInfo, ComputingInfo, TaskDataInfoRequest } from "../types/Common.sol";
+import { ComputingInfoRequest, TaskType, TaskStatus, Task, TaskDataInfo, ComputingInfo, TaskDataInfoRequest, TaskReportStatus } from "../types/Common.sol";
 
 /**
  * @title ITaskMgt
@@ -17,6 +17,9 @@ interface ITaskMgt {
 
     // emit when task completed
     event TaskCompleted(bytes32 indexed taskId);
+
+    // emit when task failed
+    event TaskFailed(bytes32 indexed taskId);
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
      * @param taskType The type of the task.
@@ -67,6 +70,13 @@ interface ITaskMgt {
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool);
 
     /**
+     * @notice Update task
+     * @param taskId The task id.
+     * @return Return task status.
+     */
+    function updateTask(bytes32 taskId) external returns (TaskStatus);
+
+    /**
      * @notice Get the tasks that need to be run by Workers.
      * @return Returns an array of tasks that the workers will run.
      */
@@ -85,6 +95,13 @@ interface ITaskMgt {
      * @return Returns The completed task.
      */
     function getCompletedTaskById(bytes32 taskId) external view returns (Task memory);
+
+   /**
+    * @notice Get task report status.
+    * @param taskId The task id.
+    * @return Returns The task report status.
+    */
+   function getTaskReportStatus(bytes32 taskId) external view returns (TaskReportStatus);
 
     /**
      * @notice Set a data verification contract of a task type.

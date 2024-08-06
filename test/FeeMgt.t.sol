@@ -9,8 +9,9 @@ import {FeeMgt} from "../contracts/FeeMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
 import {FeeTokenInfo, Allowance, TaskStatus} from "../contracts/types/Common.sol";
+import {IFeeMgtEvents} from "./events/IFeeMgtEvents.sol";
 
-contract FeeMgtTest is MockDeployer {
+contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     bytes32 private ETH_HASH;
     receive() external payable {
     }
@@ -29,6 +30,8 @@ contract FeeMgtTest is MockDeployer {
         erc20.initialize(desc, tokenSymbol, 18);
 
         vm.prank(contractOwner);
+        vm.expectEmit(true, true, true, true);
+        emit FeeTokenAdded(tokenSymbol, address(erc20), computingPrice);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
@@ -69,6 +72,8 @@ contract FeeMgtTest is MockDeployer {
         require(b, "transfer error");
 
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit TokenTransfered(msg.sender, "ETH", 5);
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
         uint256 balance = address(feeMgt).balance;
         assertEq(balance, 5, "balance error");
@@ -92,6 +97,8 @@ contract FeeMgtTest is MockDeployer {
         assertEq(spenderAllowance, 5, "spenderAllowance error");
         
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit TokenTransfered(msg.sender, "TEST", 5);
         feeMgt.transferToken(msg.sender, "TEST", 5);
         uint256 balance = erc20.balanceOf(address(feeMgt));
         assertEq(balance, 5, "balance error");
@@ -118,6 +125,8 @@ contract FeeMgtTest is MockDeployer {
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
 
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit TokenWithdrawn(msg.sender, tokenSymbol, 5);
         feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
 
         uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
@@ -173,6 +182,8 @@ contract FeeMgtTest is MockDeployer {
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit FeeLocked(info.taskId, info.tokenSymbol, lockedAmount);
         feeMgt.lock(
             info.taskId,
             info.submitter,
@@ -199,11 +210,12 @@ contract FeeMgtTest is MockDeployer {
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit FeeUnlocked(info.taskId, info.tokenSymbol, lockedAmount);
         feeMgt.unlock(
             info.taskId,
             info.submitter,
-            info.tokenSymbol,
-            lockedAmount
+            info.tokenSymbol
         );
 
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
@@ -226,7 +238,10 @@ contract FeeMgtTest is MockDeployer {
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
 
+        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
+        vm.expectEmit(true, true, true, true);
+        emit FeeSettled(info.taskId, info.tokenSymbol, lockedAmount);
         feeMgt.settle(
             info.taskId,
             TaskStatus.COMPLETED,
@@ -237,7 +252,6 @@ contract FeeMgtTest is MockDeployer {
             info.dataProviders
         );
 
-        uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, allowance.free);
         assertEq(oldAllowance.locked - lockedAmount, allowance.locked);

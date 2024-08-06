@@ -15,7 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task} from "../contracts/types/Common.sol";
+import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task, TaskReportStatus} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
@@ -74,9 +74,6 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function submitTask(string memory tokenSymbol) internal {
         bytes memory consumerPk = bytes("consumerPk");
-        // vm.expectEmit(true, true, true, true);
-        emit WorkerReceiveTask(keccak256(abi.encode(this)), taskId);
-
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
         assertEq(oldAllowance.locked, 0, "oldAllowance.locked not correct");
@@ -88,6 +85,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.prank(address(msg.sender));
         erc20.approve(address(feeMgt), feeAmount);
         vm.prank(address(msg.sender));
+        vm.expectEmit(false, false, false, false);
+        emit TaskDispatched(taskId, new bytes32[](0)); 
         taskId = taskMgt.submitTask{value: feeAmount}(
             TaskType.DATA_SHARING,
             consumerPk,
@@ -112,6 +111,9 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
             Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(workerIds[i]);
             assertEq(tasks.length, 1);
             assertEq(tasks[0].status == TaskStatus.PENDING, true);
+            
+            TaskReportStatus reportStatus = taskMgt.getTaskReportStatus(tasks[0].taskId);
+            require(reportStatus == TaskReportStatus.WAITING, "task report status error");
         }
     }
 
@@ -123,8 +125,52 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
         for (uint256 i = 0; i < workerIds.length; i++) {
             vm.prank(workerOwners[i]);
+            if (i == workerIds.length - 1) {
+                vm.expectEmit(true, true, true, true);
+                emit TaskCompleted(taskId);
+            }
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
             taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
         }
+    }
+
+    function test_reportResult_LessT() public {
+        test_submitTask();
+
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        require(workerIds.length == workerOwners.length, "the length of worker id and worker owner not equal");
+
+        for (uint256 i = 0; i < workerIds.length - 2; i++) {
+            vm.prank(workerOwners[i]);
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
+            taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
+        }
+        vm.prank(address(msg.sender));
+        vm.warp(block.timestamp + 70);
+        vm.expectEmit(true, true, true, true);
+        emit TaskFailed(taskId);
+        taskMgt.updateTask(taskId);
+    }
+
+    function test_reportResult_GreaterT() public {
+        test_submitTask();
+
+        (bytes32[] memory workerIds, address[] memory workerOwners) = _getWorkerInfoByDataId(dataId);
+        require(workerIds.length == workerOwners.length, "the length of worker id and worker owner not equal");
+
+        for (uint256 i = 0; i < workerIds.length - 1; i++) {
+            vm.prank(workerOwners[i]);
+            vm.expectEmit(true, true, true, true);
+            emit ResultReported(taskId, workerOwners[i]);
+            taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
+        }
+        vm.prank(address(msg.sender));
+        vm.warp(block.timestamp + 70);
+        vm.expectEmit(true, true, true, true);
+        emit TaskCompleted(taskId);
+        taskMgt.updateTask(taskId);
     }
 
     function _getWorkerInfoByDataId(bytes32 dataId_) internal view returns (bytes32[] memory workerIds, address[] memory workerOwners) {
