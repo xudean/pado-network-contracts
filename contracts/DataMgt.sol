@@ -67,16 +67,16 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         }
 
         DataInfo memory dataInfo = DataInfo({
-                dataId: dataId,
-                dataTag: "",
-                priceInfo: PriceInfo({tokenSymbol:"", price:0}),
-                dataContent: new bytes(0),
-                encryptionSchema: encryptionSchema,
-                workerIds: workerIds,
-                registeredTimestamp: uint64(block.timestamp),
-                owner: msg.sender,
-                status: DataStatus.REGISTERING
-            });
+            dataId: dataId,
+            dataTag: "",
+            priceInfo: PriceInfo({tokenSymbol:"", price:0}),
+            dataContent: new bytes(0),
+            encryptionSchema: encryptionSchema,
+            workerIds: workerIds,
+            registeredTimestamp: uint64(block.timestamp),
+            owner: msg.sender,
+            status: DataStatus.REGISTERING
+        });
         _dataInfos[dataId] = dataInfo;
         _dataIdListPerOwner[msg.sender].push(dataId);
 
@@ -97,9 +97,11 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         PriceInfo calldata priceInfo,
         bytes calldata dataContent
     ) external returns (bytes32) {
-        require(_dataInfos[dataId].status == DataStatus.REGISTERING, "DataMgt.register: invalid dataId");
-
         DataInfo storage dataInfo = _dataInfos[dataId];
+
+        require(dataInfo.dataId == dataId, "DataMgt.register: data does not exist");
+        require(dataInfo.status == DataStatus.REGISTERING, "DataMgt.register: data status is not REGISTERING");
+        require(dataInfo.owner == msg.sender, "DataMgt.register: caller is not data owner");
 
         dataInfo.dataTag = dataTag;
         dataInfo.priceInfo = priceInfo;
@@ -153,6 +155,7 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         DataInfo storage dataInfo = _dataInfos[dataId];
         require(dataInfo.dataId == dataId, "DataMgt.deleteDataById: data does not exist");
         require(dataInfo.status != DataStatus.DELETED, "DataMgt.deleteDataById: data already deleted");
+        require(dataInfo.owner == msg.sender, "DataMgt.deleteDataById: caller is not data owner");
 
         dataInfo.status = DataStatus.DELETED;
 
