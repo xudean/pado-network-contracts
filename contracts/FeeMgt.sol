@@ -57,11 +57,10 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     ) payable external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "FeeMgt.transferToken: not supported token");
         if (_isETH(tokenSymbol)) {
-            require(amount == msg.value, "FeeMgt.transferToken: numTokens is not correct");
+            require(amount == msg.value, "FeeMgt.transferToken: amount is not correct");
         }
         else {
             FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
-            require(feeTokenInfo.tokenAddress != address(0), "FeeMgt.transferToken: tokenSymbol is not supported");
             
             address tokenAddress = feeTokenInfo.tokenAddress;
             IERC20(tokenAddress).transferFrom(from, address(this), amount);
@@ -96,7 +95,6 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         }
         else {
             FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
-            require(feeTokenInfo.tokenAddress != address(0), "FeeMgt.transferToken: tokenSymbol is not supported");
             
             address tokenAddress = feeTokenInfo.tokenAddress;
             IERC20(tokenAddress).transfer(to, amount);

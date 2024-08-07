@@ -35,6 +35,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
+
+        vm.prank(contractOwner);
+        vm.expectRevert("FeeMgt._addFeeToken: token symbol already exists");
+        feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
     }
 
     function test_addFeeToken() public returns (uint256){
@@ -52,6 +56,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         emit FeeTokenUpdated(tokenSymbol, address(erc20), computingPrice);
         feeMgt.updateFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
+
+        vm.prank(contractOwner);
+        vm.expectRevert("FeeMgt.updateFeeToken: fee token does not exist");
+        feeMgt.updateFeeToken("TESTETH", address(erc20), computingPrice); 
     }
 
     function test_updateFeeToken() public returns (uint256) {
@@ -90,6 +98,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         require(b, "transfer error");
 
         vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.transferToken: amount is not correct");
+        feeMgt.transferToken{value: 5}(msg.sender, "ETH", 6);
+
+        vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
         emit TokenTransfered(msg.sender, "ETH", 5);
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
@@ -113,7 +125,14 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         erc20.approve(address(feeMgt), 5);
         uint256 spenderAllowance = erc20.allowance(msg.sender, address(feeMgt));
         assertEq(spenderAllowance, 5, "spenderAllowance error");
-        
+
+        vm.expectRevert("FeeMgt.onlyTaskMgt: only task mgt allowed to call");
+        feeMgt.transferToken(msg.sender, "TEST", 5);
+
+        vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.transferToken: not supported token");
+        feeMgt.transferToken(msg.sender, "TESTETH", 5);
+                
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
         emit TokenTransfered(msg.sender, "TEST", 5);
@@ -141,6 +160,15 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         
         uint256 oldSenderBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
+
+        vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.withdrawToken: not supported token"); 
+        feeMgt.withdrawToken(msg.sender, "TESTETH", 5);
+
+        vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.withdrawToken: insufficient free allowance");
+        feeMgt.withdrawToken(msg.sender, tokenSymbol, 6);
+
 
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
@@ -199,6 +227,16 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+
+        vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.lock: Insufficient free allowance");
+        feeMgt.lock(
+            info.taskId,
+            info.submitter,
+            info.tokenSymbol,
+            lockedAmount + 2 
+        );
+
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
         emit FeeLocked(info.taskId, info.tokenSymbol, lockedAmount);
