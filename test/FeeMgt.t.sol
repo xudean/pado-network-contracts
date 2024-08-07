@@ -43,6 +43,24 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         return 2;
     }
 
+    function updateFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
+        TestERC20 erc20 = new TestERC20();
+        erc20.initialize(desc, tokenSymbol, 18);
+
+        vm.prank(contractOwner);
+        vm.expectEmit(true, true, true, true);
+        emit FeeTokenUpdated(tokenSymbol, address(erc20), computingPrice);
+        feeMgt.updateFeeToken(tokenSymbol, address(erc20), computingPrice);
+        erc20PerSymbol[tokenSymbol] = erc20;
+    }
+
+    function test_updateFeeToken() public returns (uint256) {
+        test_addFeeToken();
+        updateFeeToken("TEST", "Test Token", 1);
+        updateFeeToken("bTEST", "Test Token 2", 1);
+        return 2;
+    }
+
     function test_getFeeTokens() public {
         FeeTokenInfo[] memory oldTokenList = feeMgt.getFeeTokens();
         uint256 addedNum = test_addFeeToken();

@@ -239,7 +239,18 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param computingPrice The computing price for the token.
      * @return Returns true if the updating is successful.
      */
-    function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {}
+    function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {
+        FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
+        require(feeTokenInfo.tokenAddress != address(0), "FeeMgt.updateFeeToken: fee token does not exist");
+
+        if (tokenAddress != address(0)) {
+            feeTokenInfo.tokenAddress = tokenAddress;
+        }
+        if (computingPrice != 0) {
+            feeTokenInfo.computingPrice = computingPrice;
+        }
+        emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
+    }
     /**
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
