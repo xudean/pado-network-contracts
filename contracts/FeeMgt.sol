@@ -14,7 +14,7 @@ import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
  */
 contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     // task mgt
-    ITaskMgt public _taskMgt;
+    ITaskMgt public taskMgt;
 
     // tokenSymbol => tokenAddress
     mapping(string symbol => address tokenAddress) private _tokenAddressForSymbol;
@@ -38,12 +38,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     
     /**
      * @notice Initial FeeMgt.
-     * @param taskMgt The TaskMgt
+     * @param _taskMgt The TaskMgt
      * @param computingPriceForETH The computing price for ETH.
      * @param contractOwner The owner of the contract
      */
-    function initialize(ITaskMgt taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
-        _taskMgt = taskMgt;
+    function initialize(ITaskMgt _taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
+        taskMgt = _taskMgt;
         _addFeeToken("ETH", address(0), computingPriceForETH);
         _transferOwnership(contractOwner);
     }
@@ -370,16 +370,16 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
     /**
      * @notice Set TaskMgt.
-     * @param taskMgt The TaskMgt
+     * @param _taskMgt The TaskMgt
      */
-    function setTaskMgt(ITaskMgt taskMgt) external onlyOwner{
-        ITaskMgt oldTaskMgt = _taskMgt;
-        _taskMgt = taskMgt;
-        emit TaskMgtUpdated(address(oldTaskMgt), address(_taskMgt));
+    function setTaskMgt(ITaskMgt _taskMgt) external onlyOwner{
+        ITaskMgt oldTaskMgt = taskMgt;
+        taskMgt = _taskMgt;
+        emit TaskMgtUpdated(address(oldTaskMgt), address(taskMgt));
     }
 
     modifier onlyTaskMgt() {
-        require(msg.sender == address(_taskMgt), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
+        require(msg.sender == address(taskMgt), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
         _;
     }
 }

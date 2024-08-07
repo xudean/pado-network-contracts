@@ -13,10 +13,10 @@ import {Worker, DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "./types
  */
 contract DataMgt is IDataMgt, OwnableUpgradeable {
     // registry count
-    uint256 public _registryCount;
+    uint256 public registryCount;
 
     // The Worker Management
-    IWorkerMgt public _workerMgt;
+    IWorkerMgt public workerMgt;
 
     // dataId => dataInfo
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
@@ -31,12 +31,12 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
 
     /**
      * @notice Initialize the data management
-     * @param workerMgt The worker management
+     * @param _workerMgt The worker management
      * @param contractOwner The owner of the contract
      */
-    function initialize(IWorkerMgt workerMgt, address contractOwner) external initializer {
-        _workerMgt = workerMgt;
-        _registryCount = 0;
+    function initialize(IWorkerMgt _workerMgt, address contractOwner) external initializer {
+        workerMgt = _workerMgt;
+        registryCount = 0;
         _transferOwnership(contractOwner);
     }
 
@@ -48,19 +48,19 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     function prepareRegistry(
         EncryptionSchema calldata encryptionSchema
     ) external returns (bytes32 dataId, bytes[] memory publicKeys) {
-        dataId = keccak256(abi.encode(encryptionSchema, _registryCount));
-        _registryCount++;
+        dataId = keccak256(abi.encode(encryptionSchema, registryCount));
+        registryCount++;
 
-        bool res = _workerMgt.selectMultiplePublicKeyWorkers(
+        bool res = workerMgt.selectMultiplePublicKeyWorkers(
             dataId,
             encryptionSchema.t,
             encryptionSchema.n
         );
         require(res, "DataMgt.prepareRegistry: select multiple public key workers error");
-        bytes32[] memory workerIds = _workerMgt.getMultiplePublicKeyWorkers(dataId);
+        bytes32[] memory workerIds = workerMgt.getMultiplePublicKeyWorkers(dataId);
         require(workerIds.length == encryptionSchema.n, "DataMgt.prepareRegistry: get multiple public key workers error");
         
-        Worker[] memory workers = _workerMgt.getWorkersByIds(workerIds);
+        Worker[] memory workers = workerMgt.getWorkersByIds(workerIds);
         publicKeys = new bytes[](workerIds.length);
         for (uint256 i = 0; i < workerIds.length; i++) {
             publicKeys[i] = workers[i].publicKey;
