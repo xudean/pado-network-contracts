@@ -390,6 +390,14 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
        return TaskReportStatus.WAITING;
    }
 
+   /**
+    * @notice Update task report timeout.
+    * @param timeout The task report timeout.
+    */
+   function updateTaskReportTimeout(uint64 timeout) external onlyOwner {
+       taskTimeout = timeout;
+   }
+
     /**
      * @notice Set a data verification contract of a task type.
      * @param taskType The type of task.

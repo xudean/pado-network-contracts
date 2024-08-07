@@ -173,6 +173,15 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         taskMgt.updateTask(taskId);
     }
 
+    function test_updateTaskReportTimeout() public {
+        vm.prank(contractOwner);
+        taskMgt.updateTaskReportTimeout(20);
+        (bool b, bytes memory res) = address(taskMgt).call(abi.encode(keccak256("taskTimeout()")));
+        require(b, "call taskTimeout error");
+        uint256 taskTimeout = abi.decode(res, (uint256));
+        assertEq(taskTimeout, 20);
+    }
+
     function _getWorkerInfoByDataId(bytes32 dataId_) internal view returns (bytes32[] memory workerIds, address[] memory workerOwners) {
         workerIds = dataMgt.getDataById(dataId_).workerIds;
         workerOwners = new address[](workerIds.length);

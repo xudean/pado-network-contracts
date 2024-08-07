@@ -14,4 +14,7 @@ interface ITaskMgtEvents {
 
     // emit when task failed
     event TaskFailed(bytes32 indexed taskId);
+
+    // emit when task report timeout updated
+    event TaskReportTimeoutUpdated(uint64 timeout);
 }
