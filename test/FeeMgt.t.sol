@@ -114,6 +114,8 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function test_transferToken_TEST() public {
+        (bool b, ) = payable(address(taskMgt)).call{value: 50}(new bytes(0));
+        require(b, "transfer error");
         test_addFeeToken();
 
         TestERC20 erc20 = erc20PerSymbol["TEST"];
@@ -128,6 +130,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
 
         vm.expectRevert("FeeMgt.onlyTaskMgt: only task mgt allowed to call");
         feeMgt.transferToken(msg.sender, "TEST", 5);
+
+        vm.prank(address(taskMgt));
+        vm.expectRevert("FeeMgt.transferToken: msg.value should be zero");
+        feeMgt.transferToken{value: 1}(msg.sender, "TEST", 5);
 
         vm.prank(address(taskMgt));
         vm.expectRevert("FeeMgt.transferToken: not supported token");

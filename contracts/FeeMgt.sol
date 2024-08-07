@@ -60,6 +60,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             require(amount == msg.value, "FeeMgt.transferToken: amount is not correct");
         }
         else {
+            require(msg.value == 0, "FeeMgt.transferToken: msg.value should be zero");
             FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
             
             address tokenAddress = feeTokenInfo.tokenAddress;

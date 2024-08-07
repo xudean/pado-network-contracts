@@ -268,11 +268,11 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
         Worker memory worker = workerMgt.getWorkerById(workerId);
-        require(msg.sender == worker.owner, "TaskMgt.reportResult: worker id and worker owner error");
+        require(msg.sender == worker.owner, "TaskMgt.reportResult: caller is not worker owner");
         Task storage task = _allTasks[taskId];
-        require(task.taskId == taskId, "TaskMgt.reportResult: the task does not exist");
+        require(task.taskId == taskId, "TaskMgt.reportResult: task does not exist");
 
-        require(task.status == TaskStatus.PENDING, "TaskMgt.reportResult: the task status is not PENDING");
+        require(task.status == TaskStatus.PENDING, "TaskMgt.reportResult: task status is not PENDING");
         ComputingInfo storage computingInfo = task.computingInfo;
 
         uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
