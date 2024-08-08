@@ -20,6 +20,10 @@ interface ITaskMgt {
 
     // emit when task failed
     event TaskFailed(bytes32 indexed taskId);
+
+    // emit when task report timeout updated
+    event TaskReportTimeoutUpdated(uint64 timeout);
+
     /**
      * @notice Network Consumer submit confidential computing task to PADO Network.
      * @param taskType The type of the task.
@@ -102,6 +106,12 @@ interface ITaskMgt {
     * @return Returns The task report status.
     */
    function getTaskReportStatus(bytes32 taskId) external view returns (TaskReportStatus);
+
+   /**
+    * @notice Update task report timeout.
+    * @param timeout The task report timeout.
+    */
+   function updateTaskReportTimeout(uint64 timeout) external;
 
     /**
      * @notice Set a data verification contract of a task type.

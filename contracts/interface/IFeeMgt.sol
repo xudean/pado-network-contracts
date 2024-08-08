@@ -16,6 +16,13 @@ interface IFeeMgt {
         uint256 computingPrice
     );
 
+    // emit in updateFeeToken
+    event FeeTokenUpdated(
+        string indexed tokenSymbol,
+        address tokenAddress,
+        uint256 computingPrice
+    );
+
     // emit in transfer token
     event TokenTransfered(
         address from,
@@ -138,6 +145,15 @@ interface IFeeMgt {
      * @return Returns true if the adding is successful.
      */
     function addFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool);
+
+    /**
+     * @notice Update the fee token.
+     * @param tokenSymbol The fee token symbol.
+     * @param tokenAddress The fee token address.
+     * @param computingPrice The computing price for the token.
+     * @return Returns true if the updating is successful.
+     */
+    function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool);
 
     /**
      * @notice Get the all fee tokens.

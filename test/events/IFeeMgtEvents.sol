@@ -9,6 +9,13 @@ interface IFeeMgtEvents {
         uint256 computingPrice
     );
 
+    // emit in updateFeeToken
+    event FeeTokenUpdated(
+        string indexed tokenSymbol,
+        address tokenAddress,
+        uint256 computingPrice
+    );
+
     // emit in transfer token
     event TokenTransfered(
         address from,

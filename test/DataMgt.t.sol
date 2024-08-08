@@ -31,9 +31,34 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
         bytes memory dataContent = bytes("test");
 
+        vm.expectRevert("DataMgt.register: data does not exist");
+        dataMgt.register(
+            keccak256("registryId"),
+            "data tag",
+            priceInfo,
+            dataContent
+        );
+
+        vm.prank(msg.sender);
+        vm.expectRevert("DataMgt.register: caller is not data owner");
+        dataMgt.register(
+            registryId,
+            "data tag",
+            priceInfo,
+            dataContent
+        );
+
         vm.expectEmit(true, true, true, true);
         emit DataRegistered(registryId);
         bytes32 dataId = dataMgt.register(
+            registryId,
+            "data tag",
+            priceInfo,
+            dataContent
+        );
+
+        vm.expectRevert("DataMgt.register: data status is not REGISTERING");
+        dataMgt.register(
             registryId,
             "data tag",
             priceInfo,
@@ -45,6 +70,9 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
     function test_getDataById() public {
         test_Registry();
+
+        vm.expectRevert("DataMgt.getDataById: data does not exist");
+        dataMgt.getDataById(keccak256("test id"));
 
         DataInfo memory dataInfo = dataMgt.getDataById(registryId);
         assertEq(dataInfo.dataId, registryId);
@@ -59,6 +87,13 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
     function test_deleteDataById() public {
         test_Registry();
+        
+        vm.expectRevert("DataMgt.deleteDataById: data does not exist");
+        dataMgt.deleteDataById(keccak256("test id"));
+
+        vm.prank(msg.sender);
+        vm.expectRevert("DataMgt.deleteDataById: caller is not data owner");
+        dataMgt.deleteDataById(registryId);
 
         vm.expectEmit(true, true, true, true);
         emit DataDeleted(registryId);
@@ -66,5 +101,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         DataInfo memory dataInfo = dataMgt.getDataById(registryId);
 
         assertEq(dataInfo.status == DataStatus.DELETED, true);
+
+        vm.expectRevert("DataMgt.deleteDataById: data already deleted");
+        dataMgt.deleteDataById(registryId); 
     }
 }

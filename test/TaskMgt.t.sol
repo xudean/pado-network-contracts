@@ -87,11 +87,21 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.prank(address(msg.sender));
         vm.expectEmit(false, false, false, false);
         emit TaskDispatched(taskId, new bytes32[](0)); 
-        taskId = taskMgt.submitTask{value: feeAmount}(
-            TaskType.DATA_SHARING,
-            consumerPk,
-            dataId
-        );
+
+        if (_isETH(dataInfo.priceInfo.tokenSymbol)) {
+            taskId = taskMgt.submitTask{value: feeAmount}(
+                TaskType.DATA_SHARING,
+                consumerPk,
+                dataId
+            );
+        }
+        else {
+            taskId = taskMgt.submitTask(
+                TaskType.DATA_SHARING,
+                consumerPk,
+                dataId
+            );
+        }
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(allowance.free, 0, "allowance.free not correct");
         assertEq(allowance.locked, feeAmount, "allowance.locked not correct");
@@ -133,6 +143,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
             emit ResultReported(taskId, workerOwners[i]);
             taskMgt.reportResult(taskId, workerIds[i], bytes("task result"));
         }
+        Task memory task = taskMgt.getCompletedTaskById(taskId);
+        require(task.status == TaskStatus.COMPLETED, "task status is not completed");
     }
 
     function test_reportResult_LessT() public {
@@ -152,6 +164,10 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.expectEmit(true, true, true, true);
         emit TaskFailed(taskId);
         taskMgt.updateTask(taskId);
+
+        vm.prank(msg.sender);
+        vm.expectRevert("TaskMgt.getCompletedTaskById: task is not completed"); 
+        taskMgt.getCompletedTaskById(taskId);
     }
 
     function test_reportResult_GreaterT() public {
@@ -171,6 +187,19 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.expectEmit(true, true, true, true);
         emit TaskCompleted(taskId);
         taskMgt.updateTask(taskId);
+
+        vm.prank(msg.sender);
+        Task memory task = taskMgt.getCompletedTaskById(taskId);
+        require(task.status == TaskStatus.COMPLETED, "task is not completed");
+    }
+
+    function test_updateTaskReportTimeout() public {
+        vm.prank(contractOwner);
+        taskMgt.updateTaskReportTimeout(20);
+        (bool b, bytes memory res) = address(taskMgt).call(abi.encode(keccak256("taskTimeout()")));
+        require(b, "call taskTimeout error");
+        uint256 taskTimeout = abi.decode(res, (uint256));
+        assertEq(taskTimeout, 20);
     }
 
     function _getWorkerInfoByDataId(bytes32 dataId_) internal view returns (bytes32[] memory workerIds, address[] memory workerOwners) {
