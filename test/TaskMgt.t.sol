@@ -129,6 +129,15 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         }
         Task memory task = taskMgt.getCompletedTaskById(taskId);
         require(task.status == TaskStatus.COMPLETED, "task status is not completed");
+
+        DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
+        FeeTokenInfo memory feeInfo = feeMgt.getFeeTokenBySymbol(TOKEN_SYMBOL);
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            vm.prank(workerOwners[i]);
+            feeMgt.withdrawToken(workerOwners[i], TOKEN_SYMBOL, feeInfo.computingPrice); 
+        }
+        vm.prank(dataInfo.owner);
+        feeMgt.withdrawToken(dataInfo.owner, TOKEN_SYMBOL, dataInfo.priceInfo.price);
     }
 
     function test_reportResult_LessT() public {

@@ -205,16 +205,20 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         address[] dataProviders;
     }
 
+    function _getMockAddress(string memory tag) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(bytes(tag)))));
+    }
+
     function getTaskSubmittionInfo(string memory tokenSymbol) internal view returns (SubmittionInfo memory) {
         bytes32 taskId = keccak256(bytes("task id"));
         
         address[] memory workerOwners = new address[](3);
-        workerOwners[0] = msg.sender;
-        workerOwners[1] = msg.sender;
-        workerOwners[2] = msg.sender;
+        workerOwners[0] = _getMockAddress("worker 0");
+        workerOwners[1] = _getMockAddress("worker 1");
+        workerOwners[2] = _getMockAddress("worker 2");
 
         address[] memory dataProviders = new address[](1);
-        dataProviders[0] = msg.sender;
+        dataProviders[0] = _getMockAddress("data provider");
 
         SubmittionInfo memory info = SubmittionInfo({
             taskId: taskId,
@@ -314,6 +318,22 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
             info.dataProviders
         );
 
+
+        SubmittionInfo memory submittionInfo = getTaskSubmittionInfo(tokenSymbol);
+        for (uint256 i = 0; i < submittionInfo.workerOwners.length; i++) {
+            vm.prank(submittionInfo.workerOwners[i]);
+            feeMgt.withdrawToken(submittionInfo.workerOwners[i], tokenSymbol, 1);
+            uint256 bal = getBalance(submittionInfo.workerOwners[i], tokenSymbol);
+            assertEq(bal, 1, "worker owner balance error");
+        }
+
+        for (uint256 i = 0; i < submittionInfo.dataProviders.length; i++) {
+            vm.prank(submittionInfo.dataProviders[i]);
+            feeMgt.withdrawToken(submittionInfo.dataProviders[i], tokenSymbol, 1);
+            uint256 bal = getBalance(submittionInfo.dataProviders[i], tokenSymbol);
+            assertEq(bal, 1, "data provider balance error");
+        }
+
         Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
         assertEq(oldAllowance.free, allowance.free);
         assertEq(oldAllowance.locked - lockedAmount, allowance.locked);
@@ -321,7 +341,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 balance = getBalance(msg.sender, tokenSymbol);
         uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
 
-        assertEq(oldBalance + lockedAmount, balance);
+        assertEq(oldBalance, balance);
         assertEq(oldFeeMgtBalance - lockedAmount, feeMgtBalance);
 
         assertEq(allowance.free, 1);

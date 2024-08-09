@@ -22,8 +22,8 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     // tokenSymbol[]
     string[] private _symbolList;
 
-    // dataUser => tokenSymbol => allowance
-    mapping(address dataUser => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForDataUser;
+    // eoa => tokenSymbol => allowance
+    mapping(address eoa => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForEOA;
 
     // taskId => amount
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
@@ -67,7 +67,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             IERC20(tokenAddress).transferFrom(from, address(this), amount);
         }
 
-        Allowance storage allowance = _allowanceForDataUser[from][tokenSymbol];
+        Allowance storage allowance = _allowanceForEOA[from][tokenSymbol];
 
         allowance.free += amount;
 
@@ -87,7 +87,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     ) external {
         require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
 
-        Allowance storage allowance = _allowanceForDataUser[to][tokenSymbol];
+        Allowance storage allowance = _allowanceForEOA[to][tokenSymbol];
         require(allowance.free >= amount, "FeeMgt.withdrawToken: insufficient free allowance");
         allowance.free -= amount;
         if (_isETH(tokenSymbol)) {
@@ -120,7 +120,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.lock: not supported token");
 
-        Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
+        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
 
         require(allowance.free >= toLockAmount, "FeeMgt.lock: Insufficient free allowance");
 
@@ -148,7 +148,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         uint256 toUnlockAmount = _lockedAmountForTaskId[taskId];
         require(toUnlockAmount > 0, "FeeMgt.unlock: locked amount is zero");
 
-        Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
+        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
         require(allowance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked allowance");
 
         allowance.free += toUnlockAmount;
@@ -189,7 +189,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 
-        Allowance storage allowance = _allowanceForDataUser[submitter][tokenSymbol];
+        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
 
         uint256 expectedAllowance = computingPrice * workerOwners.length + dataPrice * dataProviders.length;
 
@@ -316,12 +316,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
     /**
      * @notice Get allowance info.
-     * @param dataUser The address of data user
-     * @param tokenSymbol The token symbol for the data user
-     * @return Allowance for the data user
+     * @param eoa The address of EOA
+     * @param tokenSymbol The token symbol for the EOA
+     * @return Allowance for the EOA
      */
-    function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory) {
-        return _allowanceForDataUser[dataUser][tokenSymbol];
+    function getAllowance(address eoa, string calldata tokenSymbol) external view returns (Allowance memory) {
+        return _allowanceForEOA[eoa][tokenSymbol];
     }
 
     /**
@@ -351,30 +351,14 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         address[] memory dataProviders
     ) internal {
         uint256 settledFee = 0;
-        if (_isETH(tokenSymbol)) {
-            for (uint256 i = 0; i < workerOwners.length; i++) {
-                payable(workerOwners[i]).transfer(computingPrice);
-                settledFee += computingPrice;
-            }
-
-            for (uint256 i = 0; i < dataProviders.length; i++) {
-                payable(dataProviders[i]).transfer(dataPrice);
-                settledFee += dataPrice;
-            }
+        for (uint256 i = 0; i < workerOwners.length; i++) {
+            _allowanceForEOA[workerOwners[i]][tokenSymbol].free += computingPrice;
+            settledFee += computingPrice;
         }
-        else {
-            require(_feeTokenInfoForSymbol[tokenSymbol].tokenAddress != address(0), "FeeMgt._settle: can not find token address");
-            IERC20 tokenAddress = IERC20(_feeTokenInfoForSymbol[tokenSymbol].tokenAddress);
 
-            for (uint256 i = 0; i < workerOwners.length; i++) {
-                tokenAddress.transfer(workerOwners[i], computingPrice);
-                settledFee += computingPrice;
-            }
-
-            for (uint256 i = 0; i < dataProviders.length; i++) {
-                tokenAddress.transfer(dataProviders[i], dataPrice);
-                settledFee += dataPrice;
-            }
+        for (uint256 i = 0; i < dataProviders.length; i++) {
+            _allowanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
+            settledFee += dataPrice;
         }
         emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
