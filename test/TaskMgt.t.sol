@@ -195,6 +195,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function test_updateTaskReportTimeout() public {
         vm.prank(contractOwner);
+        vm.expectEmit(true, true, true, true);
+        emit TaskReportTimeoutUpdated(20);
         taskMgt.updateTaskReportTimeout(20);
         (bool b, bytes memory res) = address(taskMgt).call(abi.encode(keccak256("taskTimeout()")));
         require(b, "call taskTimeout error");

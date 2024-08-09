@@ -289,6 +289,10 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         
         _popOnReportingTask(computingInfo, waitingIndex, taskId, workerId);
 
+        if (computingInfo.waitingList.length == 0) {
+            _onTaskCompleted(taskId);
+        }
+
         emit ResultReported(taskId, msg.sender);
 
         return true;
@@ -410,6 +414,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     */
    function updateTaskReportTimeout(uint64 timeout) external onlyOwner {
        taskTimeout = timeout;
+       emit TaskReportTimeoutUpdated(timeout);
    }
 
     /**
