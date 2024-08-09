@@ -28,7 +28,7 @@ async function call() {
         // console.log("addStrategies success!")
         // await removeStrategies(0, [1]);
         // console.log("removeStrategies success!")
-        await getCurrentTotalStake()
+        await getStrategy(0,0)
 
 /*        for(let i = 0; i < 13; i++){
         // the removal of lower index entries will cause a shift in the indices of the other strategies to remove
