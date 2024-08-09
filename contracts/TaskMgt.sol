@@ -177,14 +177,16 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @notice find the index of an element in an array
      * @param target The target element.
      * @param array The array.
-     * @return index The index of the target element. If not found, return max.
+     * @return isFound and index Whether the element is found in the array,  index of the target element.
      */
-    function _find(bytes32 target, bytes32[] memory array) internal pure returns (uint256 index) {
+    function _find(bytes32 target, bytes32[] memory array) internal pure returns (bool isFound, uint256 index) {
         index = type(uint256).max;
+        isFound = false;
 
         for (uint256 i = 0; i < array.length; i++) {
             if (array[i] == target) {
                 index = i;
+                isFound = true;
                 break;
             }
         }
@@ -198,7 +200,8 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         Task storage task = _allTasks[taskId];
         DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
 
-        uint256 pendingIndex = _find(taskId, _pendingTaskIds);
+        (bool isFound, uint256 pendingIndex) = _find(taskId, _pendingTaskIds);
+        require(isFound, "TaskMgt._onTaskCompleted: not found taskId in _pendingTaskIds");
         _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
         _pendingTaskIds.pop();
 
@@ -217,7 +220,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
             workerIds = new bytes32[](workerIdLength);
             uint256 workerIndex = 0;
             for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
-                if (_find(computingInfo.workerIds[i], computingInfo.waitingList) == type(uint256).max) {
+                (bool b, ) = _find(computingInfo.workerIds[i], computingInfo.waitingList);
+                if (b)
+                {
                     workerIds[workerIndex] = computingInfo.workerIds[i];
                     workerIndex++;
                 }
@@ -243,9 +248,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function _onTaskFailed(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
-        DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
 
-        uint256 pendingIndex = _find(taskId, _pendingTaskIds);
+        (bool b, uint256 pendingIndex) = _find(taskId, _pendingTaskIds);
+        require(b, "TaskMgt._onTaskFailed: not found taskId in _pendingTaskIds");
         _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
         _pendingTaskIds.pop();
 
@@ -267,37 +272,46 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @return True if reporting is successful.
      */
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
+        Task storage task = _allTasks[taskId];
         Worker memory worker = workerMgt.getWorkerById(workerId);
         require(msg.sender == worker.owner, "TaskMgt.reportResult: caller is not worker owner");
-        Task storage task = _allTasks[taskId];
         require(task.taskId == taskId, "TaskMgt.reportResult: task does not exist");
 
         require(task.status == TaskStatus.PENDING, "TaskMgt.reportResult: task status is not PENDING");
         ComputingInfo storage computingInfo = task.computingInfo;
 
-        uint256 waitingIndex = _find(workerId, computingInfo.waitingList);
-        require(waitingIndex != type(uint256).max, "TaskMgt.reportResult: worker id not in waiting list");
+        (bool bWaiting, uint256 waitingIndex) = _find(workerId, computingInfo.waitingList);
+        require(bWaiting, "TaskMgt.reportResult: worker id not in waiting list");
 
-        uint256 workerIndex = _find(workerId, computingInfo.workerIds);
+        (bool bWorker, uint256 workerIndex) = _find(workerId, computingInfo.workerIds);
+        require(bWorker, "TaskMgt.reportResult: worker id not in computingInfo.workerIds");
         computingInfo.results[workerIndex] = result;
+        
+        _popOnReportingTask(computingInfo, waitingIndex, taskId, workerId);
 
+        emit ResultReported(taskId, msg.sender);
+
+        return true;
+    }
+
+    /**
+     * @notice pop on reporting task
+     * @param computingInfo Computing info
+     * @param taskId The task id
+     * @param workerId The worker id
+     */
+    function _popOnReportingTask(ComputingInfo storage computingInfo, uint256 waitingIndex, bytes32 taskId, bytes32 workerId) internal {
         uint256 waitingListLength = computingInfo.waitingList.length;
         computingInfo.waitingList[waitingIndex] = computingInfo.waitingList[waitingListLength - 1];
         computingInfo.waitingList.pop();
         waitingListLength--;
 
         bytes32[] storage taskIds = _taskIdForWorker[workerId];
-        uint256 taskIndex = _find(taskId, taskIds);
+        (bool bTaskIdForWorker, uint256 taskIndex) = _find(taskId, taskIds);
+        require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in taskIdForWorker");
         taskIds[taskIndex] = taskIds[taskIds.length - 1];
         taskIds.pop();
 
-        if (waitingListLength == 0) {
-            _onTaskCompleted(taskId);
-        }
-
-        emit ResultReported(taskId, msg.sender);
-
-        return true;
     }
 
     /**
