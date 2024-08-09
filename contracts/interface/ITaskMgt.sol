@@ -81,12 +81,6 @@ interface ITaskMgt {
     function updateTask(bytes32 taskId) external returns (TaskStatus);
 
     /**
-     * @notice Get the tasks that need to be run by Workers.
-     * @return Returns an array of tasks that the workers will run.
-     */
-    function getPendingTasks() external view returns (Task[] memory);
-
-    /**
      * @notice Get the tasks that a Worker needs to run.
      * @param workerId The Worker id.
      * @return Returns an array of tasks that the worker will run.

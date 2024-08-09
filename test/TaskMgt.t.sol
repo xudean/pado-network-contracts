@@ -111,22 +111,6 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         submitTask(TOKEN_SYMBOL);
     }
 
-    function test_getPendingTasks() public {
-        test_submitTask();
-        assertEq(taskMgt.getPendingTasks().length, 1);
-
-        (bytes32[] memory workerIds, ) = _getWorkerInfoByDataId(dataId);
-
-        for (uint256 i = 0; i < workerIds.length; i++) {
-            Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(workerIds[i]);
-            assertEq(tasks.length, 1);
-            assertEq(tasks[0].status == TaskStatus.PENDING, true);
-            
-            TaskReportStatus reportStatus = taskMgt.getTaskReportStatus(tasks[0].taskId);
-            require(reportStatus == TaskReportStatus.WAITING, "task report status error");
-        }
-    }
-
     function test_reportResult() public {
         test_submitTask();
 
@@ -216,7 +200,6 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function test_getCompletedTasks() public {
         test_reportResult();
-        assertEq(taskMgt.getPendingTasks().length, 0);
         Task[] memory tasks = taskMgt.getPendingTasksByWorkerId(keccak256(abi.encode(this)));
         assertEq(tasks.length, 0);
 

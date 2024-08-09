@@ -35,9 +35,6 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     // workerId => taskIds[]
     mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
 
-    // The id of pending tasks
-    bytes32[] private _pendingTaskIds;
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -149,7 +146,6 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         });
 
         _allTasks[taskId] = task;
-        _pendingTaskIds.push(taskId);
         
         for (uint256 i = 0; i < workerIds.length; i++) {
             _taskIdForWorker[workerIds[i]].push(taskId);
@@ -193,17 +189,12 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     }
 
     /**
-     * @notice Remove pendingTaskIds and settle fee.
+     * @notice settle fee.
      * @param taskId The id of task.
      */
     function _onTaskCompleted(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
         DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
-
-        (bool isFound, uint256 pendingIndex) = _find(taskId, _pendingTaskIds);
-        require(isFound, "TaskMgt._onTaskCompleted: not found taskId in _pendingTaskIds");
-        _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
-        _pendingTaskIds.pop();
 
         task.status = TaskStatus.COMPLETED;
 
@@ -243,16 +234,11 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     }
 
     /**
-     * @notice remove pendingTaskIds and unlock fee
+     * @notice unlock fee
      * @param taskId The task id
      */
     function _onTaskFailed(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
-
-        (bool b, uint256 pendingIndex) = _find(taskId, _pendingTaskIds);
-        require(b, "TaskMgt._onTaskFailed: not found taskId in _pendingTaskIds");
-        _pendingTaskIds[pendingIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
-        _pendingTaskIds.pop();
 
         task.status = TaskStatus.FAILED;
 
@@ -340,21 +326,6 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
             _onTaskFailed(taskId);
         }
         return task.status;
-    }
-
-    /**
-     * @notice Get the tasks that need to be run by Workers.
-     * @return Returns an array of tasks that the workers will run.
-     */
-    function getPendingTasks() external view returns (Task[] memory) {
-        uint256 pendingTaskCount = _pendingTaskIds.length;
-
-        Task[] memory tasks = new Task[](pendingTaskCount);
-        for (uint256 i = 0; i < pendingTaskCount; i++) {
-            tasks[i] = _allTasks[_pendingTaskIds[i]];
-        }
-
-        return tasks;
     }
 
     /**
