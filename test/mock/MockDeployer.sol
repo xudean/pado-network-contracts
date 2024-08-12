@@ -63,7 +63,11 @@ contract MockDeployer is Test {
         TaskType[] memory taskTypes = new TaskType[](1);
         taskTypes[0] = TaskType.DATA_SHARING;
 
-        vm.prank(address(uint160(uint256(keccak256(bytes(name))))));
+        address workerAddress = address(uint160(uint256(keccak256(bytes(name)))));
+        vm.prank(address(contractOwner));
+        workerMgt.addWhiteListItem(workerAddress);
+
+        vm.prank(workerAddress);
         // workerMgt.register(name, "test", taskTypes, publicKeys, 0);
 
         bytes memory quorumNumbers = new bytes(1);

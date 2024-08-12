@@ -27,8 +27,8 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     // taskId => task
     mapping(bytes32 taskId => Task task) private _allTasks;
 
-    // workerId => taskIds[]
-    mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
+    // workerId => pendingTaskIds[]
+    mapping(bytes32 workerId => bytes32[] taskIds) private _pendingTaskIdForWorker;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -144,7 +144,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         _allTasks[taskId] = task;
         
         for (uint256 i = 0; i < workerIds.length; i++) {
-            _taskIdForWorker[workerIds[i]].push(taskId);
+            _pendingTaskIdForWorker[workerIds[i]].push(taskId);
         }
         router.getFeeMgt().lock(
             taskId,
@@ -266,9 +266,9 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
      * @param workerId The worker id
      */
     function _popOnReportingTask(bytes32 taskId, bytes32 workerId) internal {
-        bytes32[] storage taskIds = _taskIdForWorker[workerId];
+        bytes32[] storage taskIds = _pendingTaskIdForWorker[workerId];
         (bool bTaskIdForWorker, uint256 taskIndex) = _find(taskId, taskIds);
-        require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in taskIdForWorker");
+        require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in pendingTaskIdForWorker");
         taskIds[taskIndex] = taskIds[taskIds.length - 1];
         taskIds.pop();
 
@@ -304,7 +304,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
      * @return Returns an array of tasks that the worker will run.
      */
     function getPendingTasksByWorkerId(bytes32 workerId) external view returns (Task[] memory) {
-        bytes32[] storage taskIds = _taskIdForWorker[workerId];
+        bytes32[] storage taskIds = _pendingTaskIdForWorker[workerId];
         uint256 taskIdLength = taskIds.length;
 
         Task[] memory tasks = new Task[](taskIdLength);
