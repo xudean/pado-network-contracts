@@ -304,16 +304,25 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
 
+        for (uint256 i = 0; i < info.workerOwners.length; i++) {
+            feeMgt.payWorker(
+                info.taskId,
+                info.submitter,
+                info.workerOwners[i],
+                info.tokenSymbol
+            );
+        }
+
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
+        uint256 lockedAmount2 = info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit FeeSettled(info.taskId, info.tokenSymbol, lockedAmount);
+        emit FeeSettled(info.taskId, info.tokenSymbol, lockedAmount2);
         feeMgt.settle(
             info.taskId,
             TaskStatus.COMPLETED,
             info.submitter,
             info.tokenSymbol,
-            info.workerOwners,
             info.dataPrice,
             info.dataProviders
         );

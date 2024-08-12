@@ -162,12 +162,36 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
 
 
     /**
+     * @notice TaskMgt contract request pay workers.
+     * @param taskId The task id.
+     * @param submitter The task submitter.
+     * @param workerOwner The owner of the worker.
+     * @param tokenSymbol The symbol of the token.
+     */
+    function payWorker(
+        bytes32 taskId,
+        address submitter,
+        address workerOwner,
+        string calldata tokenSymbol
+    ) external {
+        require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
+        uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
+        require(computingPrice > 0, "FeeMgt.settle: computing price is not set");
+        uint256 lockedAmount = _lockedAmountForTaskId[taskId];
+        require(lockedAmount >= computingPrice, "FeeMgt.payWorker: insufficient lockedAmount");
+        _lockedAmountForTaskId[taskId] -= computingPrice;
+
+        _allowanceForEOA[submitter][tokenSymbol].locked -= computingPrice;
+        _allowanceForEOA[workerOwner][tokenSymbol].free += computingPrice;
+
+    }
+
+    /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
      * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      * @return Returns true if the settlement is successful.
@@ -177,13 +201,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
-        uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
-        require(computingPrice > 0, "FeeMgt.settle: computing price is not set");
 
         // TODO
         if (taskResultStatus == TaskStatus.COMPLETED) {}
@@ -192,7 +213,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
 
         Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
 
-        uint256 expectedAllowance = computingPrice * workerOwners.length + dataPrice * dataProviders.length;
+        uint256 expectedAllowance = dataPrice * dataProviders.length;
 
         require(expectedAllowance <= allowance.locked, "FeeMgt.settle: insufficient locked allowance");
         require(lockedAmount >= expectedAllowance, "FeeMgt.settle: locked not enough");
@@ -200,15 +221,11 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         if (expectedAllowance > 0) {
             _settle(
                 taskId,
+                submitter,
                 tokenSymbol,
-                computingPrice,
-                workerOwners,
                 dataPrice,
                 dataProviders
             );
-    
-            allowance.locked -= expectedAllowance;
-
         }
         if (lockedAmount > expectedAllowance) {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
@@ -338,30 +355,25 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
+     * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
-     * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      */
     function _settle(
         bytes32 taskId,
+        address submitter,
         string memory tokenSymbol,
-        uint256 computingPrice,
-        address[] memory workerOwners,
         uint256 dataPrice,
         address[] memory dataProviders
     ) internal {
         uint256 settledFee = 0;
-        for (uint256 i = 0; i < workerOwners.length; i++) {
-            _allowanceForEOA[workerOwners[i]][tokenSymbol].free += computingPrice;
-            settledFee += computingPrice;
-        }
 
         for (uint256 i = 0; i < dataProviders.length; i++) {
             _allowanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
             settledFee += dataPrice;
         }
+        _allowanceForEOA[submitter][tokenSymbol].locked -= settledFee;
         emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
 

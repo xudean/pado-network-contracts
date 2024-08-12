@@ -197,28 +197,11 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         address[] memory dataProviders = new address[](1);
         dataProviders[0] = dataInfo.owner;
         
-        ComputingInfo storage computingInfo = task.computingInfo;
-        bytes32[] memory workerIds;
-        if (computingInfo.reportCount == computingInfo.n) {
-            workerIds = computingInfo.workerIds;
-        }
-        else {
-            workerIds = new bytes32[](computingInfo.reportCount);
-            uint256 workerIndex = 0;
-            for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
-                if (computingInfo.hasReported[i]) {
-                    workerIds[workerIndex] = computingInfo.workerIds[i];
-                    workerIndex++;
-                }
-            }
-        }
-
         router.getFeeMgt().settle(
             task.taskId,
             task.status,
             task.submitter,
             task.tokenSymbol,
-            _getWorkerOwners(workerIds),
             dataInfo.priceInfo.price,
             dataProviders
         );
@@ -266,6 +249,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         computingInfo.reportCount = computingInfo.reportCount + 1;
         
         _popOnReportingTask(taskId, workerId);
+        router.getFeeMgt().payWorker(taskId, task.submitter, worker.owner, task.tokenSymbol);
 
         if (computingInfo.reportCount == computingInfo.n) {
             _onTaskCompleted(taskId);
