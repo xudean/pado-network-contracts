@@ -44,7 +44,7 @@ async function updateMetaUri() {
         throw new Error('AVS_META_URI is empty!')
     }
     // Send a transaction to the createNewTask function
-    const tx = await contract.updateAVSMetadataURI(metaUri);
+    const tx = await contract.updateAVSMetadataURI('');
 
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
@@ -57,8 +57,8 @@ async function updateMetaUri() {
 async  function call(){
     const caller = await wallet.getAddress()
     console.log(`caller is:${caller}`);
-    await owner();
-    await getRestakeableStrategies();
+    await updateMetaUri();
+    // await getRestakeableStrategies();
     // await updateMetaUri();
 }
 

@@ -1,27 +1,27 @@
 {
   "addresses": {
-    "blsApkRegistry": "0xAd0f1E7A77fD2B85e005044dAb997e6DC493A7ff",
-    "blsApkRegistryImplementation": "0xE868A60d7DB83491e5b946C9619691bCbEA5Ef8b",
-    "indexRegistry": "0x193FB02E7163b50E555b6A6c7F93b29Bee80E5Cc",
-    "indexRegistryImplementation": "0x00aa6130F71fbA4F9bA5Cd74e6559d0C183Cc2DD",
-    "operatorStateRetriever": "0x195a6B65d13142b9dDf056b766dea1233EbE3188",
-    "proxyAdmin": "0x6Ec1E8480bA9BEb19af7C29F413f985378fa8E49",
-    "registryCoordinator": "0x9A8Cd787251189ED13B188Dae92a79c3b4B23fDF",
-    "registryCoordinatorImplementation": "0x8922E4b29dCEf35DF2C0bd59df00a55E3556B4b5",
-    "serviceManager": "0xb6988aebe11e88cb2D93d9E557795A2fDE68A8B5",
-    "serviceManagerImplementation": "0x8DC395d9E2f233C769DBBEb1E20755704DDa26E6",
-    "stakeRegistry": "0x43FB8400FA8390a02DDD8cca8AC0FB4A9124eC71",
-    "stakeRegistryImplementation": "0x328a2832D79906e6a312bdEbe748a7aB18f4C6C2"
+    "blsApkRegistry": "0xE52F19d8C70FaB02Acc197295e2c40E8D4F872B5",
+    "blsApkRegistryImplementation": "0xE296Db94AC0113451878C72F99D489c0d0E25Ae5",
+    "indexRegistry": "0x83C8CCdc4735d68E610aFcE12Bf6f0594F2Fb712",
+    "indexRegistryImplementation": "0x52309aec94A7CD20Ed16177F64515774D540233A",
+    "operatorStateRetriever": "0xe53eEdf98A005540bcd2dd1a7012e93c227c8c58",
+    "proxyAdmin": "0x5f2d30c31236b8B8c9e10FCb41c4A61e6315075d",
+    "registryCoordinator": "0x72A66ffbdf571e8AD9Eee51BDa3E8a95A283aD7e",
+    "registryCoordinatorImplementation": "0xED3412D9a2c705563640f19e8a3365B8e7d2a1Ec",
+    "serviceManager": "0xfF831744F9edD103Dee5514DBfA61BffA1e6BB59",
+    "serviceManagerImplementation": "0xd47aC693cF3B7613BC334a7422C06bE668f2c1b1",
+    "stakeRegistry": "0x2AACd0939E604A46927dc73B8ab495332269de85",
+    "stakeRegistryImplementation": "0x25977cDda86dE66e87621B5195F7cB9e3784149c"
   },
   "chainInfo": {
     "chainId": 17000,
-    "deploymentBlock": 1936578
+    "deploymentBlock": 2082760
   },
   "permissions": {
     "churner": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
     "ejector": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
     "networkOwner": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
     "networkUpgrader": "0x5DDAbE5dB4cE8eb0A4F5C61e40Ec5EBc46460E9F",
-    "pauserRegistry": "0xFD0D6fF9813aED630b3A158a14aD57C6032a248F"
+    "pauserRegistry": "0x5824827EA032F674e06489aaF4F0a31e44adB822"
   }
 }

@@ -1,11 +1,11 @@
 {
   "addresses": {
-    "serviceManagerAddress": "0xb6988aebe11e88cb2D93d9E557795A2fDE68A8B5",
-    "registryCoordinatorAddress": "0x9A8Cd787251189ED13B188Dae92a79c3b4B23fDF",
-    "stakeRegistryAddress": "0x43FB8400FA8390a02DDD8cca8AC0FB4A9124eC71",
-    "indexRegistryAddress": "0x193FB02E7163b50E555b6A6c7F93b29Bee80E5Cc",
-    "blsApkRegistryAddress": "0xAd0f1E7A77fD2B85e005044dAb997e6DC493A7ff",
-    "proxyAdminAddress": "0x6Ec1E8480bA9BEb19af7C29F413f985378fa8E49",
+    "serviceManagerAddress": "0xfF831744F9edD103Dee5514DBfA61BffA1e6BB59",
+    "registryCoordinatorAddress": "0x72A66ffbdf571e8AD9Eee51BDa3E8a95A283aD7e",
+    "stakeRegistryAddress": "0x2AACd0939E604A46927dc73B8ab495332269de85",
+    "indexRegistryAddress": "0x83C8CCdc4735d68E610aFcE12Bf6f0594F2Fb712",
+    "blsApkRegistryAddress": "0xE52F19d8C70FaB02Acc197295e2c40E8D4F872B5",
+    "proxyAdminAddress": "0x5f2d30c31236b8B8c9e10FCb41c4A61e6315075d",
     "avsDirectoryAddress": "0x055733000064333CaDDbC92763c58BF0192fFeBf",
     "rewardsCoordinatorAddress": "0xAcc1fb458a1317E886dB376Fc8141540537E68fE",
     "delegationManagerAddress": "0xA44151489861Fe9e3055d95adC98FbD462B948e7",

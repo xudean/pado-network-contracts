@@ -89,33 +89,6 @@ contract PADORegistryCoordinator is RegistryCoordinator {
 
     /**
      * @notice Registers a worker with the registry coordinator.
-     * @param quorumNumbers The quorum numbers associated with the worker.
-     * @param socket The socket address of the worker.
-     * @param params The parameters for registering the worker's BLS public key.
-     * @param operatorSignature The signature of the operator.
-     */
-    function registerOperator(
-        bytes calldata quorumNumbers,
-        string calldata socket,
-        IBLSApkRegistry.PubkeyRegistrationParams calldata params,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    )
-        public
-        override
-        onlyWorkerMgt
-        onlyWhenNotPaused(PAUSED_REGISTER_OPERATOR)
-    {
-        this.registerOperator(
-            msg.sender,
-            quorumNumbers,
-            socket,
-            params,
-            operatorSignature
-        );
-    }
-
-    /**
-     * @notice Registers a worker with the registry coordinator.
      * @param operatorAddr address of worker.
      * @param quorumNumbers The quorum numbers associated with the worker.
      * @param socket The socket address of the worker.
@@ -141,21 +114,6 @@ contract PADORegistryCoordinator is RegistryCoordinator {
             params,
             operatorSignature
         );
-    }
-
-    /**
-     * @notice Deregisters the caller from one or more quorums
-     * @param quorumNumbers is an ordered byte array containing the quorum numbers being deregistered from
-     */
-    function deregisterOperator(
-        bytes calldata quorumNumbers
-    )
-        public
-        override
-        onlyWorkerMgt
-        onlyWhenNotPaused(PAUSED_DEREGISTER_OPERATOR)
-    {
-        this.deregisterOperator(msg.sender, quorumNumbers);
     }
 
     /**
