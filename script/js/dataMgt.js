@@ -9,7 +9,7 @@ const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey, provider);
 
 // Replace with the address of your smart contract
-const contractAddress = process.env.DataMgt_ADDRESS;
+const contractAddress = process.env.DATA_MGT_ADDRESS;
 if (!contractAddress) {
     throw new Error('DataMgt_ADDRESS is empty!')
 }

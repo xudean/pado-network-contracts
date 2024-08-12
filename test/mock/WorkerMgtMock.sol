@@ -16,10 +16,11 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     uint256 private _workerCount;
 
     mapping(bytes32 workerId => Worker worker) private _allWorkers;
-    bytes32[] private _workerIds;
+    bytes32[] public _workerIds;
 
     mapping(bytes32 dataId => bytes32[] workerIds) private _workerIdForDataId;
 
+    mapping(address workerAddr => bytes32 workerId) private _addressWorkerId;
     constructor() {
         _disableInitializers();
     }
@@ -27,6 +28,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     function initialize() external initializer {
         _workerCount = 0;
     }
+
     /**
      * @notice Worker register.
      * @param name The worker name.
@@ -63,6 +65,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         });
         _allWorkers[workerId] = worker;
         _workerIds.push(workerId);
+        _addressWorkerId[msg.sender]=workerId;
         return workerId;
     }
 
@@ -124,7 +127,10 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
     function getMultiplePublicKeyWorkers(
         bytes32 dataId
     ) external view returns (bytes32[] memory) {
-        require(_workerIdForDataId[dataId].length > 0, "workerIdForDataId not found");
+        require(
+            _workerIdForDataId[dataId].length > 0,
+            "workerIdForDataId not found"
+        );
         return _workerIdForDataId[dataId];
     }
 
@@ -178,24 +184,27 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         require(worker.workerId == workerId, "worker does not exist");
         return worker;
     }
-	
-	/**
-	 * @notice Get workers by ids.
-	 * @param workerIds The id of workers
-	 * @return Returns The workers
-	 */
-	function getWorkersByIds(
-	    bytes32[] calldata workerIds
-	) external view returns (Worker[] memory) {
-		uint256 workerIdLength = workerIds.length;
-		Worker[] memory result = new Worker[](workerIdLength);
 
-		for (uint256 i = 0; i < workerIdLength; i++) {
-			require(_allWorkers[workerIds[i]].workerId == workerIds[i], "WorkerMgtMock.getWorkersByIds: invalid worker id");
-			result[i] = _allWorkers[workerIds[i]];
-		}
-		return result;
-	}
+    /**
+     * @notice Get workers by ids.
+     * @param workerIds The id of workers
+     * @return Returns The workers
+     */
+    function getWorkersByIds(
+        bytes32[] calldata workerIds
+    ) external view returns (Worker[] memory) {
+        uint256 workerIdLength = workerIds.length;
+        Worker[] memory result = new Worker[](workerIdLength);
+
+        for (uint256 i = 0; i < workerIdLength; i++) {
+            require(
+                _allWorkers[workerIds[i]].workerId == workerIds[i],
+                "WorkerMgtMock.getWorkersByIds: invalid worker id"
+            );
+            result[i] = _allWorkers[workerIds[i]];
+        }
+        return result;
+    }
 
     /**
      * @notice Get worker by name.
@@ -276,7 +285,63 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
      */
     function removeWhiteListItem(address _address) external {}
 
-    function _strEq(string memory s1, string memory s2) internal pure returns (bool){
+    function _strEq(
+        string memory s1,
+        string memory s2
+    ) internal pure returns (bool) {
         return keccak256(bytes(s1)) == keccak256(bytes(s2));
     }
+
+    function version() external pure returns (uint256) {
+        return 1;
+    }
+
+    function getAllIds() external view returns (bytes32[] memory) {
+        return _workerIds;
+    }
+
+    function deregisterOperator(
+        bytes calldata quorumNumbers
+    ) external override returns (bool) {
+        bytes32 workerId = _addressWorkerId[msg.sender];
+        _allWorkers[workerId].status = WorkerStatus.UNREGISTERED;
+        //remove from workerIds
+        _removeWorkerId(workerId);
+    }
+
+    //-----------------remove element in _workerIds-------------------
+    function _removeWorkerId(bytes32 id) internal {
+        uint256 index = _findIndex(id);
+        if (index == _workerIds.length) {
+            return; // Not found
+        }
+        _removeAtIndex(index);
+    }
+    /**
+     * get index of worker
+     * @param id The worker id.
+     */
+    function _findIndex(bytes32 id) internal view returns (uint256) {
+        for (uint256 i = 0; i < _workerIds.length; i++) {
+            if (_workerIds[i] == id) {
+                return i;
+            }
+        }
+        return _workerIds.length; // Not found
+    }
+
+    /**
+     * @notice Remove a worker from the workerIds array.
+     * @param index The index of the worker to remove.
+     */
+    function _removeAtIndex(uint256 index) internal {
+        require(index < _workerIds.length, "Index out of bounds");
+        // replace value with the latest element
+        if (index < _workerIds.length - 1) {
+            _workerIds[index] = _workerIds[_workerIds.length - 1];
+        }
+        // reduce the array size
+        _workerIds.pop();
+    }
+    //-------------------------------------------------------------------
 }

@@ -43,6 +43,14 @@ interface IWorkerMgt {
     ) external returns (bytes32);
 
     /**
+     * @notice Deregisters the caller from one or more quorums
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being deregistered from
+     */
+    function deregisterOperator(
+        bytes calldata quorumNumbers
+    ) external returns (bool);
+
+    /**
      * @notice TaskMgt contract request selecting workers which will run the task.
      * @param taskId The task id.
      * @param taskType The type of the task.
@@ -195,4 +203,9 @@ interface IWorkerMgt {
      * @param _address The address to remove.
      */
     function removeWhiteListItem(address _address) external;
+
+    /**
+     * @notice Get version.
+     */
+    function version() external pure returns (uint256);
 }

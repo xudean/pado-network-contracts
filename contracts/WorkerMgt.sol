@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
 import {ComputingInfoRequest, WorkerType, Worker, WorkerStatus, TaskType} from "./types/Common.sol";
 import {IBLSApkRegistry} from "@eigenlayer-middleware/src/interfaces/IBLSApkRegistry.sol";
+import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
 import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -18,7 +19,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         WorkerType workerType,
         address owner
     );
-    event SelectWorkers(bytes32 indexed dataId);
+    event SelectDataWorkers(bytes32 indexed dataId, bytes32[] workerIds);
 
     PADORegistryCoordinator public registryCoordinator;
     mapping(bytes32 => Worker) public workers;
@@ -66,6 +67,11 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
 
     /**
      * @notice Register EigenLayer's operator.
+     * @param taskTypes The types of tasks that the worker can run.
+     * @param publicKey The transaction id which worker public key  saved in arseeding.
+     * @param quorumNumbers The quorum numbers.
+     * @param socket The socket address.
+     * @param params The parameters of the operator's signature.
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerEigenOperator(
@@ -75,7 +81,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external /*onlyWhiteListedWorker(msg.sender)*/ returns (bytes32) {
+    ) external onlyWhiteListedWorker(msg.sender) returns (bytes32) {
         _checkWorkerParam(
             taskTypes,
             publicKey,
@@ -88,43 +94,69 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             revert("registryCoordinator not set!");
         }
         //result is operatorId,check whether operator has registried to eigenlayer.operatorId is same as workerId
-        bytes32 operatorId = registryCoordinator.getOperatorId(msg.sender);
-
-        if (operatorId == bytes32(0)) {
+        IRegistryCoordinator.OperatorInfo
+            memory operatorInfo = registryCoordinator.getOperator(msg.sender);
+        bytes32 operatorId = operatorInfo.operatorId;
+        if (
+            operatorId == bytes32(0) ||
+            operatorInfo.status !=
+            IRegistryCoordinator.OperatorStatus.REGISTERED
+        ) {
             operatorId = BN254.hashG1Point(params.pubkeyG1);
-            // Handle the case where operatorId is not register
-            registryCoordinator.registerOperator(
-                msg.sender,
-                quorumNumbers,
-                socket,
-                params,
-                operatorSignature
-            );
+            //build worker
+            Worker memory worker = Worker({
+                workerId: operatorId,
+                workerType: WorkerType.EIGENLAYER,
+                name: "",
+                desc: "",
+                stakeAmount: 0,
+                owner: msg.sender,
+                publicKey: publicKey[0],
+                time: uint64(block.timestamp),
+                status: WorkerStatus.REGISTERED,
+                sucTasksAmount: 0,
+                failTasksAmount: 0,
+                delegationAmount: 0
+            });
+            workers[operatorId] = worker;
+            workerIds.push(operatorId);
         }
-        //check is in workMgt
-        require(
-            !checkWorkerRegistered(operatorId),
-            "worker has already registered"
+        // Handle the case where operatorId is not register
+        registryCoordinator.registerOperator(
+            msg.sender,
+            quorumNumbers,
+            socket,
+            params,
+            operatorSignature
         );
-        //build worker
-        Worker memory worker = Worker({
-            workerId: operatorId,
-            workerType: WorkerType.EIGENLAYER,
-            name: "",
-            desc: "",
-            stakeAmount: 0,
-            owner: msg.sender,
-            publicKey: publicKey[0],
-            time: uint64(block.timestamp),
-            status: WorkerStatus.REGISTERED,
-            sucTasksAmount: 0,
-            failTasksAmount: 0,
-            delegationAmount: 0
-        });
-        workers[operatorId] = worker;
-        workerIds.push(operatorId);
-        emit WorkerRegistry(operatorId, worker.workerType, worker.owner);
+        emit WorkerRegistry(
+            operatorId,
+            workers[operatorId].workerType,
+            workers[operatorId].owner
+        );
         return operatorId;
+    }
+
+    /**
+     * @notice Deregisters the caller from one or more quorums
+     * @param quorumNumbers is an ordered byte array containing the quorum numbers being deregistered from
+     */
+    function deregisterOperator(
+        bytes calldata quorumNumbers
+    ) external returns (bool) {
+        registryCoordinator.deregisterOperator(msg.sender, quorumNumbers);
+        IRegistryCoordinator.OperatorInfo
+            memory operatorInfo = registryCoordinator.getOperator(msg.sender);
+        if (
+            operatorInfo.status ==
+            IRegistryCoordinator.OperatorStatus.DEREGISTERED
+        ) {
+            //update worker status
+            workers[operatorInfo.operatorId].status = WorkerStatus.UNREGISTERED;
+            //remove from workerIds
+            _removeWorkerId(operatorInfo.operatorId);
+        }
+        return true;
     }
 
     /**
@@ -153,6 +185,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         uint32 n
     ) external returns (bool) {
         workersToEncryptData[dataId] = _selectWorkers(n);
+        emit SelectDataWorkers(dataId, workersToEncryptData[dataId]);
         return true;
     }
 
@@ -228,7 +261,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         Worker[] memory result = new Worker[](workerIdLength);
 
         for (uint256 i = 0; i < workerIdLength; i++) {
-            require(workers[workerids[i]].workerId == workerids[i], "WorkerMgt.getWorkersByIds: invalid worker id");
+            require(
+                workers[workerids[i]].workerId == workerids[i],
+                "WorkerMgt.getWorkersByIds: invalid worker id"
+            );
             result[i] = workers[workerids[i]];
         }
         return result;
@@ -307,6 +343,13 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         workerWhiteList[_address] = false;
     }
 
+    /**
+     * @notice Get version.
+     */
+    function version() external pure returns (uint256) {
+        return 1;
+    }
+
     //==============================helper function======================
     /**
      * @notice Check whether the worker is registered.
@@ -336,7 +379,10 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) internal {}
+    ) internal {
+        require(taskTypes.length > 0, "Task types can't be empty");
+        require(publicKey.length > 0, "publicKeys can't be empty");
+    }
 
     /**
      * @notice Get a random number.
@@ -388,4 +434,40 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         }
         return selectedWorkers;
     }
+
+    //-----------------remove element in workerIds-------------------
+    function _removeWorkerId(bytes32 id) internal {
+        uint256 index = _findIndex(id);
+        if (index == workerIds.length) {
+            return; // Not found
+        }
+        _removeAtIndex(index);
+    }
+    /**
+     * get index of worker
+     * @param id The worker id.
+     */
+    function _findIndex(bytes32 id) internal view returns (uint256) {
+        for (uint256 i = 0; i < workerIds.length; i++) {
+            if (workerIds[i] == id) {
+                return i;
+            }
+        }
+        return workerIds.length; // Not found
+    }
+
+    /**
+     * @notice Remove a worker from the workerIds array.
+     * @param index The index of the worker to remove.
+     */
+    function _removeAtIndex(uint256 index) internal {
+        require(index < workerIds.length, "Index out of bounds");
+        // replace value with the latest element
+        if (index < workerIds.length - 1) {
+            workerIds[index] = workerIds[workerIds.length - 1];
+        }
+        // reduce the array size
+        workerIds.pop();
+    }
+    //-------------------------------------------------------------------
 }
