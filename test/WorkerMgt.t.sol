@@ -7,6 +7,7 @@ import {ISignatureUtils} from "eigenlayer-contracts/src/contracts/interfaces/ISi
 // import {RegistryCoordinator} from "@eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {Test, console} from "forge-std/Test.sol";
 import "./mock/WorkerSelectMock.t.sol";
+import "./mock/WorkerMgtMock.sol";
 import "../contracts/PADORegistryCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -17,6 +18,7 @@ contract WorkerMgtTest is Test {
     WorkerMgt public workerMgt;
     WorkerMgt public workerMgtImplementation;
     WorkerSelectMock workerSelectMock;
+    WorkerMgtMock workerMgtMock;
     uint[] privKeys;
     IBLSApkRegistry.PubkeyRegistrationParams[] pubkeys;
 
@@ -44,19 +46,32 @@ contract WorkerMgtTest is Test {
         for (uint32 i = 0; i < 100; i++) {
             workerSelectMock.addWorker(i);
         }
+        workerMgtMock = new WorkerMgtMock();
+        TaskType[] memory taskTypes = new TaskType[](1);
+        taskTypes[0] = TaskType.DATA_SHARING;
+        bytes[] memory pks = new bytes[](1);
+        pks[0] = new bytes(0);
+        workerMgtMock.register("", "", taskTypes, pks, 0);
+
     }
 
     function testSelectWorker() public {
         for (uint32 i; i < 10; i++) {
-            uint32[] memory workers = workerSelectMock
-                .selectWorkers(
-                    5
-                );
+            uint32[] memory workers = workerSelectMock.selectWorkers(5);
             string memory workersStr = uint32ArrayToString(workers);
             console.log("select workers:", workersStr);
             assert(workers.length == 5);
             console.log("-------------------------------------------");
         }
+    }
+
+    function testDeregistryWorker() public {
+        Worker[] memory workers = workerMgtMock.getWorkers();
+        console.log("worker size is:%d", workers.length);
+        console.log("workerIds size is:%d", workerMgtMock.getAllIds().length);
+        workerMgtMock.deregisterOperator(new bytes(0));
+        console.log("after deregister:%d", workers.length);
+        console.log("workerIds size is:%d", workerMgtMock.getAllIds().length);
     }
 
     function testRegistryWorker() public {
@@ -92,42 +107,42 @@ contract WorkerMgtTest is Test {
         assertTrue(workerMgt.workerWhiteList(address(this)));
     }
 
-//    function testWhiteList() public {
-//        console.log("owner is:%s", workerMgt.owner());
-//        console.log("address(this) is:%s", address(this));
-//        TaskType[] memory taskTypes = new TaskType[](1);
-//        taskTypes[0] = TaskType.DATA_SHARING;
-//        bytes[] memory publicKeys = new bytes[](1);
-//        publicKeys[0] = "0x024e45D7F868C41F3723B13fD7Ae03AA5A181362";
-//        bytes memory quorumNumbers = new bytes(1);
-//        string memory socket = "";
-//        IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
-//        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
-//        vm.expectRevert("workerWhiteList: worker not in whitelist");
-//
-//        workerMgt.registerEigenOperator(
-//            taskTypes,
-//            publicKeys,
-//            quorumNumbers,
-//            socket,
-//            publicKeyParams,
-//            signature
-//        );
-//        workerMgt.addWhiteListItem(address(this));
-//        console.log(
-//            "whileList is:%s",
-//            workerMgt.workerWhiteList(address(this))
-//        );
-//        vm.expectRevert("registryCoordinator not set!");
-//        workerMgt.registerEigenOperator(
-//            taskTypes,
-//            publicKeys,
-//            quorumNumbers,
-//            socket,
-//            publicKeyParams,
-//            signature
-//        );
-//    }
+    //    function testWhiteList() public {
+    //        console.log("owner is:%s", workerMgt.owner());
+    //        console.log("address(this) is:%s", address(this));
+    //        TaskType[] memory taskTypes = new TaskType[](1);
+    //        taskTypes[0] = TaskType.DATA_SHARING;
+    //        bytes[] memory publicKeys = new bytes[](1);
+    //        publicKeys[0] = "0x024e45D7F868C41F3723B13fD7Ae03AA5A181362";
+    //        bytes memory quorumNumbers = new bytes(1);
+    //        string memory socket = "";
+    //        IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
+    //        ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+    //        vm.expectRevert("workerWhiteList: worker not in whitelist");
+    //
+    //        workerMgt.registerEigenOperator(
+    //            taskTypes,
+    //            publicKeys,
+    //            quorumNumbers,
+    //            socket,
+    //            publicKeyParams,
+    //            signature
+    //        );
+    //        workerMgt.addWhiteListItem(address(this));
+    //        console.log(
+    //            "whileList is:%s",
+    //            workerMgt.workerWhiteList(address(this))
+    //        );
+    //        vm.expectRevert("registryCoordinator not set!");
+    //        workerMgt.registerEigenOperator(
+    //            taskTypes,
+    //            publicKeys,
+    //            quorumNumbers,
+    //            socket,
+    //            publicKeyParams,
+    //            signature
+    //        );
+    //    }
 
     //======================helper========================
     function uintToString(uint32 _i) public pure returns (string memory) {
