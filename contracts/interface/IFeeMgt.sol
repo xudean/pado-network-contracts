@@ -58,12 +58,6 @@ interface IFeeMgt {
         uint256 amount
     );
 
-    // emit in setTaskMgt
-    event TaskMgtUpdated(
-        address from,
-        address to
-    );
-
     /**
      * @notice TaskMgt contract request transfer tokens.
      * @param from The address from which transfer token.
@@ -182,9 +176,4 @@ interface IFeeMgt {
      */
     function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
 
-    /**
-     * @notice Set TaskMgt.
-     * @param taskMgt The TaskMgt
-     */
-    function setTaskMgt(ITaskMgt taskMgt) external;
 }

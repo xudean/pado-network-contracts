@@ -6,15 +6,16 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {ITaskMgt} from "./interface/ITaskMgt.sol";
+import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
 import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
 
 /**
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
-contract FeeMgt is IFeeMgt, OwnableUpgradeable {
-    // task mgt
-    ITaskMgt public taskMgt;
+contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
+    // router
+    IRouter public router;
 
     // tokenSymbol => FeeTokenInfo 
     mapping(string symbol => FeeTokenInfo feeTokenInfo) private _feeTokenInfoForSymbol;
@@ -35,12 +36,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     
     /**
      * @notice Initial FeeMgt.
-     * @param _taskMgt The TaskMgt
+     * @param _router The Router
      * @param computingPriceForETH The computing price for ETH.
      * @param contractOwner The owner of the contract
      */
-    function initialize(ITaskMgt _taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
-        taskMgt = _taskMgt;
+    function initialize(IRouter _router, uint256 computingPriceForETH, address contractOwner) public initializer {
+        router = _router;
         _addFeeToken("ETH", address(0), computingPriceForETH);
         _transferOwnership(contractOwner);
     }
@@ -249,6 +250,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             feeTokenInfo.computingPrice = computingPrice;
         }
         emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
+        return true;
     }
     /**
      * @notice Add the fee token.
@@ -363,18 +365,18 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
 
-    /**
-     * @notice Set TaskMgt.
-     * @param _taskMgt The TaskMgt
-     */
-    function setTaskMgt(ITaskMgt _taskMgt) external onlyOwner{
-        ITaskMgt oldTaskMgt = taskMgt;
-        taskMgt = _taskMgt;
-        emit TaskMgtUpdated(address(oldTaskMgt), address(taskMgt));
+    modifier onlyTaskMgt() {
+        require(msg.sender == address(router.getTaskMgt()), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
+        _;
     }
 
-    modifier onlyTaskMgt() {
-        require(msg.sender == address(taskMgt), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
-        _;
+    /**
+     * @notice updateRouter
+     * @param _router The router
+     */
+    function updateRouter(IRouter _router) external {
+        IRouter oldRouter = router;
+        router = _router;
+        emit RouterUpdated(oldRouter, _router);
     }
 }

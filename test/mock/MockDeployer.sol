@@ -8,11 +8,13 @@ import {TaskMgt} from "../../contracts/TaskMgt.sol";
 import {FeeMgt} from "../../contracts/FeeMgt.sol";
 // import {WorkerMgtMock} from "./WorkerMgtMock.sol";
 import {WorkerMgt} from "../../contracts/WorkerMgt.sol";
+import {Router} from "../../contracts/Router.sol";
 
 import {IDataMgt} from "../../contracts/interface/IDataMgt.sol";
 import {ITaskMgt} from "../../contracts/interface/ITaskMgt.sol";
 import {IFeeMgt} from "../../contracts/interface/IFeeMgt.sol";
 import {IWorkerMgt} from "../../contracts/interface/IWorkerMgt.sol";
+import {IRouter} from "../../contracts/interface/IRouter.sol";
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -31,6 +33,7 @@ contract MockDeployer is Test {
     IFeeMgt feeMgt;
     ITaskMgt taskMgt;
     IWorkerMgt workerMgt;
+    IRouter router;
     address contractOwner;
 
     mapping(string tokenSymbol => TestERC20 erc20) erc20PerSymbol;
@@ -83,6 +86,17 @@ contract MockDeployer is Test {
         emptyContract = new EmptyContract();
         contractOwner = msg.sender;
 
+        Router routerImplementation = new Router();
+        router = Router(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(routerImplementation),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+
         // WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
         // workerMgt = WorkerMgtMock(
         //     address(
@@ -130,7 +144,7 @@ contract MockDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         DataMgt.initialize.selector,
-                        workerMgt,
+                        router,
                         contractOwner
                     )
                 )
@@ -145,9 +159,7 @@ contract MockDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         TaskMgt.initialize.selector,
-                        dataMgt,
-                        feeMgt,
-                        workerMgt,
+                        router,
                         contractOwner
                     )
                 )
@@ -160,16 +172,16 @@ contract MockDeployer is Test {
             address(feeMgtImplementation),
             abi.encodeWithSelector(
                 FeeMgt.initialize.selector,
-                taskMgt,
+                router,
                 1,
                 contractOwner
             )
         );
 
-        // FeeMgt(address(feeMgt)).initialize(taskMgt, 1, );
-
-        vm.prank(contractOwner);
-        feeMgt.setTaskMgt(taskMgt);
+        router.setDataMgt(dataMgt);
+        router.setTaskMgt(taskMgt);
+        router.setFeeMgt(feeMgt);
+        router.setWorkerMgt(workerMgt);
 
         _addFeeTokens();
         _addWorkers();
