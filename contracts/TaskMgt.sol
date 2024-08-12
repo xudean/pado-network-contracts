@@ -118,6 +118,10 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, taskCount));
         taskCount++;
+        bool[] memory hasReported = new bool[](dataInfo.workerIds.length);
+        for (uint32 i = 0; i < hasReported.length; i++) {
+            hasReported[i] = false;
+        }
 
         Task memory task = Task({
             taskId: taskId,
@@ -137,7 +141,8 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
                 n: encryptionSchema.n,
                 workerIds: dataInfo.workerIds,
                 results: new bytes[](dataInfo.workerIds.length),
-                waitingList: dataInfo.workerIds
+                hasReported: hasReported,
+                reportCount: 0
             }),
             time: uint64(block.timestamp),
             status: TaskStatus.PENDING,
@@ -203,23 +208,19 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         
         ComputingInfo storage computingInfo = task.computingInfo;
         bytes32[] memory workerIds;
-        if (computingInfo.waitingList.length == 0) {
+        if (computingInfo.reportCount == computingInfo.n) {
             workerIds = computingInfo.workerIds;
         }
         else {
-            uint256 workerIdLength = computingInfo.workerIds.length - computingInfo.waitingList.length;
-            workerIds = new bytes32[](workerIdLength);
+            workerIds = new bytes32[](computingInfo.reportCount);
             uint256 workerIndex = 0;
             for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
-                (bool b, ) = _find(computingInfo.workerIds[i], computingInfo.waitingList);
-                if (b)
-                {
+                if (computingInfo.hasReported[i]) {
                     workerIds[workerIndex] = computingInfo.workerIds[i];
                     workerIndex++;
                 }
             }
         }
-
 
         feeMgt.settle(
             task.taskId,
@@ -266,16 +267,16 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         require(task.status == TaskStatus.PENDING, "TaskMgt.reportResult: task status is not PENDING");
         ComputingInfo storage computingInfo = task.computingInfo;
 
-        (bool bWaiting, uint256 waitingIndex) = _find(workerId, computingInfo.waitingList);
-        require(bWaiting, "TaskMgt.reportResult: worker id not in waiting list");
-
         (bool bWorker, uint256 workerIndex) = _find(workerId, computingInfo.workerIds);
         require(bWorker, "TaskMgt.reportResult: worker id not in computingInfo.workerIds");
+        require(!computingInfo.hasReported[workerIndex], "TaskMgt.reportResult: worker has reported");
         computingInfo.results[workerIndex] = result;
+        computingInfo.hasReported[workerIndex] = true;
+        computingInfo.reportCount = computingInfo.reportCount + 1;
         
-        _popOnReportingTask(computingInfo, waitingIndex, taskId, workerId);
+        _popOnReportingTask(taskId, workerId);
 
-        if (computingInfo.waitingList.length == 0) {
+        if (computingInfo.reportCount == computingInfo.n) {
             _onTaskCompleted(taskId);
         }
 
@@ -286,16 +287,10 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
     /**
      * @notice pop on reporting task
-     * @param computingInfo Computing info
      * @param taskId The task id
      * @param workerId The worker id
      */
-    function _popOnReportingTask(ComputingInfo storage computingInfo, uint256 waitingIndex, bytes32 taskId, bytes32 workerId) internal {
-        uint256 waitingListLength = computingInfo.waitingList.length;
-        computingInfo.waitingList[waitingIndex] = computingInfo.waitingList[waitingListLength - 1];
-        computingInfo.waitingList.pop();
-        waitingListLength--;
-
+    function _popOnReportingTask(bytes32 taskId, bytes32 workerId) internal {
         bytes32[] storage taskIds = _taskIdForWorker[workerId];
         (bool bTaskIdForWorker, uint256 taskIndex) = _find(taskId, taskIds);
         require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in taskIdForWorker");
@@ -319,7 +314,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
         DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
         EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
-        if (encryptionSchema.n - task.computingInfo.waitingList.length >= encryptionSchema.t) {
+        if (task.computingInfo.reportCount >= encryptionSchema.t) {
             _onTaskCompleted(taskId);
         }
         else {

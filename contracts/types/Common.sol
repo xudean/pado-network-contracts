@@ -157,7 +157,8 @@ struct ComputingInfo {
     uint32 n; // Threshold n.
     bytes32[] workerIds; // An array of worker ids that compute the task.
     bytes[] results; // The workers' results of the task.
-    bytes32[] waitingList; // The workers should report.
+    bool[] hasReported; // Whether the worker has reported.
+    uint32 reportCount; // The count of workers which had reported.
 }
 
 /**
