@@ -320,7 +320,6 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         emit FeeSettled(info.taskId, info.tokenSymbol, lockedAmount2);
         feeMgt.settle(
             info.taskId,
-            TaskStatus.COMPLETED,
             info.submitter,
             info.tokenSymbol,
             info.dataPrice,

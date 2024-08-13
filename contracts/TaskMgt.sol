@@ -199,7 +199,6 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         
         router.getFeeMgt().settle(
             task.taskId,
-            task.status,
             task.submitter,
             task.tokenSymbol,
             dataInfo.priceInfo.price,

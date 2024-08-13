@@ -111,7 +111,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param toLockAmount The amount of fee to lock.
-     * @return Returns true if the settlement is successful.
+     * @return Returns true if the locking is successful.
      */
     function lock(
         bytes32 taskId,
@@ -138,7 +138,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @return Return true if the settlement is successful.
+     * @return Return true if the unlocking is successful.
      */
     function unlock(
         bytes32 taskId,
@@ -174,9 +174,9 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         address workerOwner,
         string calldata tokenSymbol
     ) external {
-        require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
+        require(isSupportToken(tokenSymbol), "FeeMgt.payWorker: not supported token");
         uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
-        require(computingPrice > 0, "FeeMgt.settle: computing price is not set");
+        require(computingPrice > 0, "FeeMgt.payWorker: computing price is not set");
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
         require(lockedAmount >= computingPrice, "FeeMgt.payWorker: insufficient lockedAmount");
         _lockedAmountForTaskId[taskId] -= computingPrice;
@@ -189,7 +189,6 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
-     * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param dataPrice The data price of the task.
@@ -198,16 +197,12 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      */
     function settle(
         bytes32 taskId,
-        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
-
-        // TODO
-        if (taskResultStatus == TaskStatus.COMPLETED) {}
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 

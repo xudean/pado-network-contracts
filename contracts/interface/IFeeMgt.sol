@@ -88,7 +88,7 @@ interface IFeeMgt {
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param toLockAmount The amount of fee to lock.
-     * @return Returns true if the settlement is successful.
+     * @return Returns true if the locking is successful.
      */
     function lock(
         bytes32 taskId,
@@ -102,7 +102,7 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @return Return true if the settlement is successful.
+     * @return Return true if the unlocking is successful.
      */
     function unlock(
         bytes32 taskId,
@@ -127,7 +127,6 @@ interface IFeeMgt {
     /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
-     * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param dataPrice The data price of the task.
@@ -136,7 +135,6 @@ interface IFeeMgt {
      */
     function settle(
         bytes32 taskId,
-        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
         uint256 dataPrice,
