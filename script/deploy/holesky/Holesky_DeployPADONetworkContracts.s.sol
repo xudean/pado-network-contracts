@@ -58,7 +58,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
     function run()
         external
-        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmi, Router)
+        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin, Router)
     {
         console.log("deployer is:%s", msg.sender);
 
