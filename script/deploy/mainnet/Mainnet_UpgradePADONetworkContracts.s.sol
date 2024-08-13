@@ -71,7 +71,7 @@ contract Mainnet_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             payable(stdJson.readAddress(config_data, ".addresses.taskMgt"))
         );
 
-        router = TaskMgt(stdJson.readAddress(config_data, ".addresses.router"));
+        router = TaskMgt(payable(stdJson.readAddress(config_data, ".addresses.router")));
     }
 
     function _upgradeContracts() internal {
