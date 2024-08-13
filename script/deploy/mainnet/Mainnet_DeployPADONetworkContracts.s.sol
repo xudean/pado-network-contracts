@@ -162,7 +162,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         console.log("taskMgt proxy deployed");
 
         //router
-        router = TaskMgt(
+        router = Router(
             payable(
                 address(
                     new TransparentUpgradeableProxy(
