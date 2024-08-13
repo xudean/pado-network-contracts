@@ -8,11 +8,13 @@ import {TaskMgt} from "../../contracts/TaskMgt.sol";
 import {FeeMgt} from "../../contracts/FeeMgt.sol";
 // import {WorkerMgtMock} from "./WorkerMgtMock.sol";
 import {WorkerMgt} from "../../contracts/WorkerMgt.sol";
+import {Router} from "../../contracts/Router.sol";
 
 import {IDataMgt} from "../../contracts/interface/IDataMgt.sol";
 import {ITaskMgt} from "../../contracts/interface/ITaskMgt.sol";
 import {IFeeMgt} from "../../contracts/interface/IFeeMgt.sol";
 import {IWorkerMgt} from "../../contracts/interface/IWorkerMgt.sol";
+import {IRouter} from "../../contracts/interface/IRouter.sol";
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -23,14 +25,18 @@ import "../../contracts/PADORegistryCoordinator.sol";
 // import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {RegistryCoordinatorMock} from "./RegistryCoordinatorMock.sol";
 import {TaskType} from "../../contracts/types/Common.sol";
+import {G2Operations} from "./G2Operations.sol";
+import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
-contract MockDeployer is Test {
+contract MockDeployer is G2Operations {
+    using BN254 for *;
     ProxyAdmin proxyAdmin;
     EmptyContract emptyContract;
     IDataMgt dataMgt;
     IFeeMgt feeMgt;
     ITaskMgt taskMgt;
     IWorkerMgt workerMgt;
+    IRouter router;
     address contractOwner;
 
     mapping(string tokenSymbol => TestERC20 erc20) erc20PerSymbol;
@@ -60,13 +66,21 @@ contract MockDeployer is Test {
         TaskType[] memory taskTypes = new TaskType[](1);
         taskTypes[0] = TaskType.DATA_SHARING;
 
-        vm.prank(address(uint160(uint256(keccak256(bytes(name))))));
+        address workerAddress = address(uint160(uint256(keccak256(bytes(name)))));
+        vm.prank(address(contractOwner));
+        workerMgt.addWhiteListItem(workerAddress);
+
         // workerMgt.register(name, "test", taskTypes, publicKeys, 0);
 
         bytes memory quorumNumbers = new bytes(1);
         string memory socket = "";
         IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        uint privKey = uint(keccak256(abi.encodePacked(name)));
+            
+        publicKeyParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        publicKeyParams.pubkeyG2 = G2Operations.mul(privKey);
+        vm.prank(workerAddress);
         workerMgt.registerEigenOperator(taskTypes, publicKeys, quorumNumbers, socket, publicKeyParams, signature);
     }
 
@@ -82,6 +96,24 @@ contract MockDeployer is Test {
         proxyAdmin = new ProxyAdmin();
         emptyContract = new EmptyContract();
         contractOwner = msg.sender;
+
+        Router routerImplementation = new Router();
+        router = Router(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(routerImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        Router.initialize.selector,
+                        address(0),
+                        address(0),
+                        address(0),
+                        address(0),
+                        contractOwner
+                    ) 
+                )
+            )
+        );
 
         // WorkerMgtMock workerMgtImplementation = new WorkerMgtMock();
         // workerMgt = WorkerMgtMock(
@@ -130,7 +162,7 @@ contract MockDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         DataMgt.initialize.selector,
-                        workerMgt,
+                        router,
                         contractOwner
                     )
                 )
@@ -145,9 +177,7 @@ contract MockDeployer is Test {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         TaskMgt.initialize.selector,
-                        dataMgt,
-                        feeMgt,
-                        workerMgt,
+                        router,
                         contractOwner
                     )
                 )
@@ -160,16 +190,18 @@ contract MockDeployer is Test {
             address(feeMgtImplementation),
             abi.encodeWithSelector(
                 FeeMgt.initialize.selector,
-                taskMgt,
+                router,
                 1,
                 contractOwner
             )
         );
 
-        // FeeMgt(address(feeMgt)).initialize(taskMgt, 1, );
-
-        vm.prank(contractOwner);
-        feeMgt.setTaskMgt(taskMgt);
+        vm.startPrank(contractOwner);
+        router.setDataMgt(dataMgt);
+        router.setTaskMgt(taskMgt);
+        router.setFeeMgt(feeMgt);
+        router.setWorkerMgt(workerMgt);
+        vm.stopPrank();
 
         _addFeeTokens();
         _addWorkers();

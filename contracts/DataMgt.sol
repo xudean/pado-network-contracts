@@ -5,18 +5,19 @@ pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {IDataMgt} from "./interface/IDataMgt.sol"; 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
 import {Worker, DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "./types/Common.sol";
 
 /**
  * @title DataMgt
  * @notice DataMgt - Data Management Contract.
  */
-contract DataMgt is IDataMgt, OwnableUpgradeable {
+contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     // registry count
     uint256 public registryCount;
 
-    // The Worker Management
-    IWorkerMgt public workerMgt;
+    // The router 
+    IRouter public router;
 
     // dataId => dataInfo
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
@@ -31,11 +32,11 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
 
     /**
      * @notice Initialize the data management
-     * @param _workerMgt The worker management
+     * @param _router The router
      * @param contractOwner The owner of the contract
      */
-    function initialize(IWorkerMgt _workerMgt, address contractOwner) external initializer {
-        workerMgt = _workerMgt;
+    function initialize(IRouter _router, address contractOwner) external initializer {
+        router = _router;
         registryCount = 0;
         _transferOwnership(contractOwner);
     }
@@ -50,6 +51,8 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
     ) external returns (bytes32 dataId, bytes[] memory publicKeys) {
         dataId = keccak256(abi.encode(encryptionSchema, registryCount));
         registryCount++;
+
+        IWorkerMgt workerMgt = router.getWorkerMgt();
 
         bool res = workerMgt.selectMultiplePublicKeyWorkers(
             dataId,
@@ -160,5 +163,15 @@ contract DataMgt is IDataMgt, OwnableUpgradeable {
         dataInfo.status = DataStatus.DELETED;
 
         emit DataDeleted(dataId);
+    }
+
+    /**
+     * @notice updateRouter
+     * @param _router The router
+     */
+    function updateRouter(IRouter _router) external onlyOwner {
+        IRouter oldRouter = router;
+        router = _router;
+        emit RouterUpdated(oldRouter, _router);
     }
 }

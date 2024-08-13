@@ -6,15 +6,16 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {ITaskMgt} from "./interface/ITaskMgt.sol";
+import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
 import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
 
 /**
  * @title FeeMgt
  * @notice FeeMgt - Fee Management Contract.
  */
-contract FeeMgt is IFeeMgt, OwnableUpgradeable {
-    // task mgt
-    ITaskMgt public taskMgt;
+contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
+    // router
+    IRouter public router;
 
     // tokenSymbol => FeeTokenInfo 
     mapping(string symbol => FeeTokenInfo feeTokenInfo) private _feeTokenInfoForSymbol;
@@ -35,12 +36,12 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     
     /**
      * @notice Initial FeeMgt.
-     * @param _taskMgt The TaskMgt
+     * @param _router The Router
      * @param computingPriceForETH The computing price for ETH.
      * @param contractOwner The owner of the contract
      */
-    function initialize(ITaskMgt _taskMgt, uint256 computingPriceForETH, address contractOwner) public initializer {
-        taskMgt = _taskMgt;
+    function initialize(IRouter _router, uint256 computingPriceForETH, address contractOwner) public initializer {
+        router = _router;
         _addFeeToken("ETH", address(0), computingPriceForETH);
         _transferOwnership(contractOwner);
     }
@@ -110,7 +111,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param toLockAmount The amount of fee to lock.
-     * @return Returns true if the settlement is successful.
+     * @return Returns true if the locking is successful.
      */
     function lock(
         bytes32 taskId,
@@ -137,7 +138,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @return Return true if the settlement is successful.
+     * @return Return true if the unlocking is successful.
      */
     function unlock(
         bytes32 taskId,
@@ -161,37 +162,53 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
 
 
     /**
+     * @notice TaskMgt contract request pay workers.
+     * @param taskId The task id.
+     * @param submitter The task submitter.
+     * @param workerOwner The owner of the worker.
+     * @param tokenSymbol The symbol of the token.
+     */
+    function payWorker(
+        bytes32 taskId,
+        address submitter,
+        address workerOwner,
+        string calldata tokenSymbol
+    ) external onlyTaskMgt {
+        require(isSupportToken(tokenSymbol), "FeeMgt.payWorker: not supported token");
+        uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
+        require(computingPrice > 0, "FeeMgt.payWorker: computing price is not set");
+        uint256 lockedAmount = _lockedAmountForTaskId[taskId];
+        require(lockedAmount >= computingPrice, "FeeMgt.payWorker: insufficient lockedAmount");
+        _lockedAmountForTaskId[taskId] -= computingPrice;
+
+        _allowanceForEOA[submitter][tokenSymbol].locked -= computingPrice;
+        _allowanceForEOA[workerOwner][tokenSymbol].free += computingPrice;
+
+    }
+
+    /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
-     * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      * @return Returns true if the settlement is successful.
      */
     function settle(
         bytes32 taskId,
-        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
-        uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
-        require(computingPrice > 0, "FeeMgt.settle: computing price is not set");
-
-        // TODO
-        if (taskResultStatus == TaskStatus.COMPLETED) {}
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 
         Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
 
-        uint256 expectedAllowance = computingPrice * workerOwners.length + dataPrice * dataProviders.length;
+        uint256 expectedAllowance = dataPrice * dataProviders.length;
 
         require(expectedAllowance <= allowance.locked, "FeeMgt.settle: insufficient locked allowance");
         require(lockedAmount >= expectedAllowance, "FeeMgt.settle: locked not enough");
@@ -199,15 +216,11 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
         if (expectedAllowance > 0) {
             _settle(
                 taskId,
+                submitter,
                 tokenSymbol,
-                computingPrice,
-                workerOwners,
                 dataPrice,
                 dataProviders
             );
-    
-            allowance.locked -= expectedAllowance;
-
         }
         if (lockedAmount > expectedAllowance) {
             uint256 toReturnAmount = lockedAmount - expectedAllowance;
@@ -249,6 +262,7 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
             feeTokenInfo.computingPrice = computingPrice;
         }
         emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
+        return true;
     }
     /**
      * @notice Add the fee token.
@@ -336,45 +350,40 @@ contract FeeMgt is IFeeMgt, OwnableUpgradeable {
     /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
+     * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param computingPrice The computing price of the task.
-     * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      */
     function _settle(
         bytes32 taskId,
+        address submitter,
         string memory tokenSymbol,
-        uint256 computingPrice,
-        address[] memory workerOwners,
         uint256 dataPrice,
         address[] memory dataProviders
     ) internal {
         uint256 settledFee = 0;
-        for (uint256 i = 0; i < workerOwners.length; i++) {
-            _allowanceForEOA[workerOwners[i]][tokenSymbol].free += computingPrice;
-            settledFee += computingPrice;
-        }
 
         for (uint256 i = 0; i < dataProviders.length; i++) {
             _allowanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
             settledFee += dataPrice;
         }
+        _allowanceForEOA[submitter][tokenSymbol].locked -= settledFee;
         emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
 
-    /**
-     * @notice Set TaskMgt.
-     * @param _taskMgt The TaskMgt
-     */
-    function setTaskMgt(ITaskMgt _taskMgt) external onlyOwner{
-        ITaskMgt oldTaskMgt = taskMgt;
-        taskMgt = _taskMgt;
-        emit TaskMgtUpdated(address(oldTaskMgt), address(taskMgt));
+    modifier onlyTaskMgt() {
+        require(msg.sender == address(router.getTaskMgt()), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
+        _;
     }
 
-    modifier onlyTaskMgt() {
-        require(msg.sender == address(taskMgt), "FeeMgt.onlyTaskMgt: only task mgt allowed to call");
-        _;
+    /**
+     * @notice updateRouter
+     * @param _router The router
+     */
+    function updateRouter(IRouter _router) external onlyOwner {
+        IRouter oldRouter = router;
+        router = _router;
+        emit RouterUpdated(oldRouter, _router);
     }
 }

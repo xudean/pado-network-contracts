@@ -10,6 +10,7 @@ contract RegistryCoordinatorMock is IRegistryCoordinator, ISignatureUtils {
     function blsApkRegistry() external view returns (IBLSApkRegistry) {}
 
     function registerOperator(
+        address operatorAddr,
         bytes calldata quorumNumbers,
         string calldata socket,
         IBLSApkRegistry.PubkeyRegistrationParams calldata params,

@@ -58,12 +58,6 @@ interface IFeeMgt {
         uint256 amount
     );
 
-    // emit in setTaskMgt
-    event TaskMgtUpdated(
-        address from,
-        address to
-    );
-
     /**
      * @notice TaskMgt contract request transfer tokens.
      * @param from The address from which transfer token.
@@ -94,7 +88,7 @@ interface IFeeMgt {
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
      * @param toLockAmount The amount of fee to lock.
-     * @return Returns true if the settlement is successful.
+     * @return Returns true if the locking is successful.
      */
     function lock(
         bytes32 taskId,
@@ -108,7 +102,7 @@ interface IFeeMgt {
      * @param taskId The task id.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @return Return true if the settlement is successful.
+     * @return Return true if the unlocking is successful.
      */
     function unlock(
         bytes32 taskId,
@@ -117,22 +111,32 @@ interface IFeeMgt {
     ) external returns (bool);
 
     /**
+     * @notice TaskMgt contract request pay workers.
+     * @param taskId The task id.
+     * @param submitter The task submitter.
+     * @param workerOwner The owner of the worker.
+     * @param tokenSymbol The symbol of the token.
+     */
+    function payWorker(
+        bytes32 taskId,
+        address submitter,
+        address workerOwner,
+        string calldata tokenSymbol
+    ) external;
+
+    /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
-     * @param taskResultStatus The task run result status.
      * @param submitter The submitter of the task.
      * @param tokenSymbol The fee token symbol.
-     * @param workerOwners The owner address of all workers which have already run the task.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      * @return Returns true if the settlement is successful.
      */
     function settle(
         bytes32 taskId,
-        TaskStatus taskResultStatus,
         address submitter,
         string calldata tokenSymbol,
-        address[] calldata workerOwners,
         uint256 dataPrice,
         address[] calldata dataProviders
     ) external returns (bool);
@@ -182,9 +186,4 @@ interface IFeeMgt {
      */
     function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
 
-    /**
-     * @notice Set TaskMgt.
-     * @param taskMgt The TaskMgt
-     */
-    function setTaskMgt(ITaskMgt taskMgt) external;
 }

@@ -8,20 +8,15 @@ import {Task, TaskDataInfo, TaskDataInfoRequest, ComputingInfoRequest, TaskStatu
 import {IDataMgt} from "./interface/IDataMgt.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
+import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
 
 /**
  * @title TaskMgt
  * @notice TaskMgt - Task Management Contract.
  */
-contract TaskMgt is ITaskMgt, OwnableUpgradeable{
-    // The data management
-    IDataMgt public dataMgt;
-
-    // The fee management
-    IFeeMgt public feeMgt;
-
-    // The worker management
-    IWorkerMgt public workerMgt;
+contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
+    // The router
+    IRouter public router;
 
     // TIMEOUT
     uint64 public taskTimeout;
@@ -32,8 +27,8 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
     // taskId => task
     mapping(bytes32 taskId => Task task) private _allTasks;
 
-    // workerId => taskIds[]
-    mapping(bytes32 workerId => bytes32[] taskIds) private _taskIdForWorker;
+    // workerId => pendingTaskIds[]
+    mapping(bytes32 workerId => bytes32[] taskIds) private _pendingTaskIdForWorker;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -42,15 +37,11 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
     /**
      * @notice Initialize the task management
-     * @param _dataMgt The data management
-     * @param _feeMgt The fee management
-     * @param _workerMgt The worker management
+     * @param _router The router
      * @param contractOwner The owner of the contract
      */
-    function initialize(IDataMgt _dataMgt, IFeeMgt _feeMgt, IWorkerMgt _workerMgt, address contractOwner) public initializer {
-        dataMgt = _dataMgt;
-        feeMgt = _feeMgt;
-        workerMgt = _workerMgt;
+    function initialize(IRouter _router, address contractOwner) public initializer {
+        router = _router;
         taskCount = 0;
         taskTimeout = 60;
         _transferOwnership(contractOwner);
@@ -86,7 +77,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         uint256 workerIdLength = workerIds.length;
 
         address[] memory workerOwners = new address[](workerIdLength);
-        Worker[] memory workers = workerMgt.getWorkersByIds(workerIds);
+        Worker[] memory workers = router.getWorkerMgt().getWorkersByIds(workerIds);
         for (uint256 i = 0; i < workerIdLength; i++) {
             workerOwners[i] = workers[i].owner;
         }
@@ -105,16 +96,16 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         bytes calldata consumerPk,
         bytes32 dataId
     ) external payable returns (bytes32) {
-        DataInfo memory dataInfo = dataMgt.getDataById(dataId);
+        DataInfo memory dataInfo = router.getDataMgt().getDataById(dataId);
         PriceInfo memory priceInfo = dataInfo.priceInfo;
         bytes32[] memory workerIds = dataInfo.workerIds;
         EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
 
         require(dataInfo.status == DataStatus.REGISTERED, "TaskMgt.submitTask: data status is not REGISTERED");
         
-        uint256 computingPrice = feeMgt.getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
+        uint256 computingPrice = router.getFeeMgt().getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
         uint256 fee = priceInfo.price + workerIds.length * computingPrice;
-        feeMgt.transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
+        router.getFeeMgt().transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
         bytes32 taskId = keccak256(abi.encode(taskType, consumerPk, dataId, taskCount));
         taskCount++;
@@ -153,9 +144,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         _allTasks[taskId] = task;
         
         for (uint256 i = 0; i < workerIds.length; i++) {
-            _taskIdForWorker[workerIds[i]].push(taskId);
+            _pendingTaskIdForWorker[workerIds[i]].push(taskId);
         }
-        feeMgt.lock(
+        router.getFeeMgt().lock(
             taskId,
             msg.sender,
             priceInfo.tokenSymbol,
@@ -199,35 +190,17 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function _onTaskCompleted(bytes32 taskId) internal {
         Task storage task = _allTasks[taskId];
-        DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
+        DataInfo memory dataInfo = router.getDataMgt().getDataById(task.dataId);
 
         task.status = TaskStatus.COMPLETED;
 
         address[] memory dataProviders = new address[](1);
         dataProviders[0] = dataInfo.owner;
         
-        ComputingInfo storage computingInfo = task.computingInfo;
-        bytes32[] memory workerIds;
-        if (computingInfo.reportCount == computingInfo.n) {
-            workerIds = computingInfo.workerIds;
-        }
-        else {
-            workerIds = new bytes32[](computingInfo.reportCount);
-            uint256 workerIndex = 0;
-            for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
-                if (computingInfo.hasReported[i]) {
-                    workerIds[workerIndex] = computingInfo.workerIds[i];
-                    workerIndex++;
-                }
-            }
-        }
-
-        feeMgt.settle(
+        router.getFeeMgt().settle(
             task.taskId,
-            task.status,
             task.submitter,
             task.tokenSymbol,
-            _getWorkerOwners(workerIds),
             dataInfo.priceInfo.price,
             dataProviders
         );
@@ -243,7 +216,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
 
         task.status = TaskStatus.FAILED;
 
-        feeMgt.unlock(
+        router.getFeeMgt().unlock(
             task.taskId,
             task.submitter,
             task.tokenSymbol
@@ -260,7 +233,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      */
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
         Task storage task = _allTasks[taskId];
-        Worker memory worker = workerMgt.getWorkerById(workerId);
+        Worker memory worker = router.getWorkerMgt().getWorkerById(workerId);
         require(msg.sender == worker.owner, "TaskMgt.reportResult: caller is not worker owner");
         require(task.taskId == taskId, "TaskMgt.reportResult: task does not exist");
 
@@ -275,6 +248,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         computingInfo.reportCount = computingInfo.reportCount + 1;
         
         _popOnReportingTask(taskId, workerId);
+        router.getFeeMgt().payWorker(taskId, task.submitter, worker.owner, task.tokenSymbol);
 
         if (computingInfo.reportCount == computingInfo.n) {
             _onTaskCompleted(taskId);
@@ -291,9 +265,9 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @param workerId The worker id
      */
     function _popOnReportingTask(bytes32 taskId, bytes32 workerId) internal {
-        bytes32[] storage taskIds = _taskIdForWorker[workerId];
+        bytes32[] storage taskIds = _pendingTaskIdForWorker[workerId];
         (bool bTaskIdForWorker, uint256 taskIndex) = _find(taskId, taskIds);
-        require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in taskIdForWorker");
+        require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in pendingTaskIdForWorker");
         taskIds[taskIndex] = taskIds[taskIds.length - 1];
         taskIds.pop();
 
@@ -312,7 +286,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
         require(currentTime >= task.time + taskTimeout, "TaskMgt.updateTask: task is not timeout");
 
 
-        DataInfo memory dataInfo = dataMgt.getDataById(task.dataId);
+        DataInfo memory dataInfo = router.getDataMgt().getDataById(task.dataId);
         EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
         if (task.computingInfo.reportCount >= encryptionSchema.t) {
             _onTaskCompleted(taskId);
@@ -329,7 +303,7 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @return Returns an array of tasks that the worker will run.
      */
     function getPendingTasksByWorkerId(bytes32 workerId) external view returns (Task[] memory) {
-        bytes32[] storage taskIds = _taskIdForWorker[workerId];
+        bytes32[] storage taskIds = _pendingTaskIdForWorker[workerId];
         uint256 taskIdLength = taskIds.length;
 
         Task[] memory tasks = new Task[](taskIdLength);
@@ -398,4 +372,14 @@ contract TaskMgt is ITaskMgt, OwnableUpgradeable{
      * @return Returns true if the setting is successful.
      */
     function setResultVerifier(TaskType taskType, address resultVerifier) external onlyOwner returns (bool) {}
+
+    /**
+     * @notice updateRouter
+     * @param _router The router
+     */
+    function updateRouter(IRouter _router) external onlyOwner {
+        IRouter oldRouter = router;
+        router = _router;
+        emit RouterUpdated(oldRouter, _router);
+    }
 }
