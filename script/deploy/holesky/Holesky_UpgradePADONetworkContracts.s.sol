@@ -14,6 +14,7 @@ import "../../../contracts/WorkerMgt.sol";
 import "../../../contracts/FeeMgt.sol";
 import "../../../contracts/DataMgt.sol";
 import "../../../contracts/TaskMgt.sol";
+import "../../../contracts/Router.sol";
 
 //forge script script/deploy/holesky/Holesky_UpgradePADONetworkContracts.s.sol:Holesky_UpgradePADONetworkContracts --rpc-url [rpc_url]  --private-key [private_key] --broadcast
 contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
@@ -35,6 +36,8 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
     DataMgt public dataMgtImplementation;
     TaskMgt public taskMgt;
     TaskMgt public taskMgtImplementation;
+    Router public router;
+    Router public routerImplementation;
 
     function run() external {
         _readConfigData();
@@ -61,9 +64,11 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             stdJson.readAddress(config_data, ".addresses.dataMgt")
         );
         feeMgt = FeeMgt(stdJson.readAddress(config_data, ".addresses.feeMgt"));
-        taskMgt = TaskMgt(payable(
-            stdJson.readAddress(config_data, ".addresses.taskMgt"))
+        taskMgt = TaskMgt(
+            payable(stdJson.readAddress(config_data, ".addresses.taskMgt"))
         );
+
+        router = Router(payable(stdJson.readAddress(config_data, ".addresses.router")));
     }
 
     function _upgradeContracts() internal {
@@ -71,6 +76,7 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
         dataMgtImplementation = new DataMgt();
         feeMgtImplementation = new FeeMgt();
         taskMgtImplementation = new TaskMgt();
+        routerImplementation = new Router();
 
         proxyAdmin.upgrade(
             TransparentUpgradeableProxy(payable(address(workerMgt))),
@@ -91,10 +97,17 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
             TransparentUpgradeableProxy(payable(address(taskMgt))),
             address(taskMgtImplementation)
         );
+
+        proxyAdmin.upgrade(
+            TransparentUpgradeableProxy(payable(address(router))),
+            address(routerImplementation)
+        );
+
         console.log("workerMgt proxy is:{}", address(workerMgt));
         console.log("feeMgt proxy is:{}", address(feeMgt));
         console.log("dataMgt proxy is:{}", address(dataMgt));
         console.log("taskMgt proxy is:{}", address(taskMgt));
+        console.log("router proxy is:{}", address(router));
 
         console.log(
             "workerMgtImplementation  is:{}",
@@ -111,6 +124,11 @@ contract Holesky_UpgradePADONetworkContracts is Utils, UpgradeContractParser {
         console.log(
             "taskMgtImplementation  is:{}",
             address(taskMgtImplementation)
+        );
+
+        console.log(
+            "routerImplementation  is:{}",
+            address(routerImplementation)
         );
     }
 }
