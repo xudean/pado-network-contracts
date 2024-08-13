@@ -25,8 +25,11 @@ import "../../contracts/PADORegistryCoordinator.sol";
 // import {IRegistryCoordinator} from "@eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {RegistryCoordinatorMock} from "./RegistryCoordinatorMock.sol";
 import {TaskType} from "../../contracts/types/Common.sol";
+import {G2Operations} from "./G2Operations.sol";
+import {BN254} from "@eigenlayer-middleware/src/libraries/BN254.sol";
 
-contract MockDeployer is Test {
+contract MockDeployer is G2Operations {
+    using BN254 for *;
     ProxyAdmin proxyAdmin;
     EmptyContract emptyContract;
     IDataMgt dataMgt;
@@ -67,13 +70,17 @@ contract MockDeployer is Test {
         vm.prank(address(contractOwner));
         workerMgt.addWhiteListItem(workerAddress);
 
-        vm.prank(workerAddress);
         // workerMgt.register(name, "test", taskTypes, publicKeys, 0);
 
         bytes memory quorumNumbers = new bytes(1);
         string memory socket = "";
         IBLSApkRegistry.PubkeyRegistrationParams memory publicKeyParams;
         ISignatureUtils.SignatureWithSaltAndExpiry memory signature;
+        uint privKey = uint(keccak256(abi.encodePacked(name)));
+            
+        publicKeyParams.pubkeyG1 = BN254.generatorG1().scalar_mul(privKey);
+        publicKeyParams.pubkeyG2 = G2Operations.mul(privKey);
+        vm.prank(workerAddress);
         workerMgt.registerEigenOperator(taskTypes, publicKeys, quorumNumbers, socket, publicKeyParams, signature);
     }
 
