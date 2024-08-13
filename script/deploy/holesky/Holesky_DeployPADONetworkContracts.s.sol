@@ -20,20 +20,21 @@ import "../../../contracts/WorkerMgt.sol";
 import "../../../contracts/FeeMgt.sol";
 import "../../../contracts/DataMgt.sol";
 import "../../../contracts/TaskMgt.sol";
+import "../../../contracts/Router.sol";
 
 // # To deploy and verify our contract
 // forge script script/deploy/holesky/Holesky_DeployPADONetworkContracts.s.sol:Holesky_DeployPADONetworkContracts --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
 contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     string public existingDeploymentInfoPath =
-    string(
-        bytes(
-            "./script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
-        )
-    );
+        string(
+            bytes(
+                "./script/deploy/holesky/output/17000/padonetwork_middleware_deployment_data_holesky.json"
+            )
+        );
     string public outputPath =
-    string.concat(
-        "script/deploy/holesky/output/17000/padonetwork_contracts_deployment_data_holesky.json"
-    );
+        string.concat(
+            "script/deploy/holesky/output/17000/padonetwork_contracts_deployment_data_holesky.json"
+        );
 
     ProxyAdmin public proxyAdmin;
     address public networkOwner;
@@ -52,10 +53,12 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     DataMgt public dataMgtImplementation;
     TaskMgt public taskMgt;
     TaskMgt public taskMgtImplementation;
+    Router public router;
+    Router public routerImplementation;
 
     function run()
-    external
-    returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin)
+        external
+        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmi, Router)
     {
         console.log("deployer is:%s", msg.sender);
 
@@ -89,7 +92,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         vm.stopBroadcast();
 
-        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin);
+        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin,router);
     }
 
     /**
@@ -155,13 +158,25 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
                 )
             )
         );
-
         console.log("taskMgt proxy deployed");
+
+        //router
+        router = Router(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(emptyContract),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
+        console.log("router proxy deployed");
 
         workerMgtImplementation = new WorkerMgt();
         feeMgtImplementation = new FeeMgt();
         dataMgtImplementation = new DataMgt();
         taskMgtImplementation = new TaskMgt();
+        routerImplementation = new Router();
         console.log("implementation proxy deployed");
 
         proxyAdmin.upgradeAndCall(
@@ -205,6 +220,20 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             )
         );
         console.log("upgrade taskMgt");
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(router))),
+            address(routerImplementation),
+            abi.encodeWithSelector(
+                Router.initialize.selector,
+                dataMgt,
+                feeMgt,
+                taskMgt,
+                workerMgt,
+                networkOwner
+            )
+        );
+
         console.log(
             "registryCoordinator is:%s,owner is:%s",
             address(registryCoordinator),
@@ -257,6 +286,13 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             deployed_addresses,
             "taskMgtImplementation",
             address(taskMgtImplementation)
+        );
+
+        vm.serializeAddress(deployed_addresses, "router", address(router));
+        vm.serializeAddress(
+            deployed_addresses,
+            "routerImplementation",
+            address(routerImplementation)
         );
 
         string memory finalJson = vm.serializeString(

@@ -20,6 +20,7 @@ import "../../../contracts/WorkerMgt.sol";
 import "../../../contracts/FeeMgt.sol";
 import "../../../contracts/DataMgt.sol";
 import "../../../contracts/TaskMgt.sol";
+import "../../../contracts/Router.sol";
 
 // # To deploy and verify our contract
 // forge script script/deploy/mainnet/Mainnet_DeployPADONetworkContracts.s.sol:Mainnet_DeployPADONetworkContracts --rpc-url $MAINNET_RPC_URL --private-key $PRIVATE_KEY //--broadcast -vvvv
@@ -52,10 +53,12 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
     DataMgt public dataMgtImplementation;
     TaskMgt public taskMgt;
     TaskMgt public taskMgtImplementation;
+    Router public router;
+    Router public routerImplementation;
 
     function run()
         external
-        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin)
+        returns (WorkerMgt, FeeMgt, DataMgt, TaskMgt, ProxyAdmin, Router)
     {
         console.log("deployer is:%s", msg.sender);
 
@@ -89,7 +92,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         vm.stopBroadcast();
 
-        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin);
+        return (workerMgt, feeMgt, dataMgt, taskMgt, proxyAdmin,router);
     }
 
     /**
@@ -158,10 +161,26 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
 
         console.log("taskMgt proxy deployed");
 
+        //router
+        router = TaskMgt(
+            payable(
+                address(
+                    new TransparentUpgradeableProxy(
+                        address(emptyContract),
+                        address(proxyAdmin),
+                        ""
+                    )
+                )
+            )
+        );
+
+        console.log("router proxy deployed");
+
         workerMgtImplementation = new WorkerMgt();
         feeMgtImplementation = new FeeMgt();
         dataMgtImplementation = new DataMgt();
         taskMgtImplementation = new TaskMgt();
+        routerImplementation = new Router();
         console.log("implementation proxy deployed");
 
         proxyAdmin.upgradeAndCall(
@@ -205,6 +224,22 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             )
         );
         console.log("upgrade taskMgt");
+
+        proxyAdmin.upgradeAndCall(
+            TransparentUpgradeableProxy(payable(address(router))),
+            address(routerImplementation),
+            abi.encodeWithSelector(
+                Router.initialize.selector,
+                dataMgt,
+                feeMgt,
+                taskMgt,
+                workerMgt,
+                networkOwner
+            )
+        );
+        console.log("upgrade router");
+
+
         console.log(
             "registryCoordinator is:%s,owner is:%s",
             address(registryCoordinator),
@@ -257,6 +292,13 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             deployed_addresses,
             "taskMgtImplementation",
             address(taskMgtImplementation)
+        );
+
+        vm.serializeAddress(deployed_addresses, "router", address(router));
+        vm.serializeAddress(
+            deployed_addresses,
+            "routerImplementation",
+            address(routerImplementation)
         );
 
         string memory finalJson = vm.serializeString(
