@@ -305,6 +305,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
 
         for (uint256 i = 0; i < info.workerOwners.length; i++) {
+            vm.prank(address(taskMgt));
             feeMgt.payWorker(
                 info.taskId,
                 info.submitter,

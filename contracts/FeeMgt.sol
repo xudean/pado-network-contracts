@@ -173,7 +173,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         address submitter,
         address workerOwner,
         string calldata tokenSymbol
-    ) external {
+    ) external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "FeeMgt.payWorker: not supported token");
         uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
         require(computingPrice > 0, "FeeMgt.payWorker: computing price is not set");
