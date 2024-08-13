@@ -377,7 +377,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
      * @notice updateRouter
      * @param _router The router
      */
-    function updateRouter(IRouter _router) external {
+    function updateRouter(IRouter _router) external onlyOwner {
         IRouter oldRouter = router;
         router = _router;
         emit RouterUpdated(oldRouter, _router);

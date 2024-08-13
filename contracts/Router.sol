@@ -32,9 +32,23 @@ contract Router is IRouter, OwnableUpgradeable {
 
     /**
      * @notice Initialize the router contract
+     * @param dataMgt The DataMgt
+     * @param feeMgt The FeeMgt
+     * @param taskMgt The TaskMgt
+     * @param workerMgt The WorkerMgt
      * @param contractOwner The owner of the contract
      */
-    function initialize(address contractOwner) external initializer {
+    function initialize(
+        IDataMgt dataMgt,
+        IFeeMgt feeMgt,
+        ITaskMgt taskMgt,
+        IWorkerMgt workerMgt,
+        address contractOwner
+    ) external initializer {
+        _dataMgt = dataMgt;
+        _feeMgt = feeMgt;
+        _taskMgt = taskMgt;
+        _workerMgt = workerMgt;
         _transferOwnership(contractOwner);
     }
 
@@ -42,7 +56,7 @@ contract Router is IRouter, OwnableUpgradeable {
      * @notice setDataMgt
      * @param dataMgt, The DataMgt.
      */
-    function setDataMgt(IDataMgt dataMgt) external {
+    function setDataMgt(IDataMgt dataMgt) external onlyOwner {
         _dataMgt = dataMgt;
     }
 
@@ -58,7 +72,7 @@ contract Router is IRouter, OwnableUpgradeable {
      * @notice setFeeMgt
      * @param feeMgt, The FeeMgt.
      */
-    function setFeeMgt(IFeeMgt feeMgt) external {
+    function setFeeMgt(IFeeMgt feeMgt) external onlyOwner {
         _feeMgt = feeMgt;
     }
 
@@ -74,7 +88,7 @@ contract Router is IRouter, OwnableUpgradeable {
      * @notice setTaskMgt
      * @param taskMgt, The TaskMgt
      */
-    function setTaskMgt(ITaskMgt taskMgt) external {
+    function setTaskMgt(ITaskMgt taskMgt) external onlyOwner {
         _taskMgt = taskMgt;
     }
 
@@ -90,7 +104,7 @@ contract Router is IRouter, OwnableUpgradeable {
      * @notice setWorkerMgt
      * @param workerMgt The WorkerMgt. 
      */
-    function setWorkerMgt(IWorkerMgt workerMgt) external {
+    function setWorkerMgt(IWorkerMgt workerMgt) external onlyOwner {
         _workerMgt = workerMgt;
     }
 

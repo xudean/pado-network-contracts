@@ -103,7 +103,14 @@ contract MockDeployer is G2Operations {
                 new TransparentUpgradeableProxy(
                     address(routerImplementation),
                     address(proxyAdmin),
-                    ""
+                    abi.encodeWithSelector(
+                        Router.initialize.selector,
+                        address(0),
+                        address(0),
+                        address(0),
+                        address(0),
+                        contractOwner
+                    ) 
                 )
             )
         );
@@ -189,10 +196,12 @@ contract MockDeployer is G2Operations {
             )
         );
 
+        vm.startPrank(contractOwner);
         router.setDataMgt(dataMgt);
         router.setTaskMgt(taskMgt);
         router.setFeeMgt(feeMgt);
         router.setWorkerMgt(workerMgt);
+        vm.stopPrank();
 
         _addFeeTokens();
         _addWorkers();
