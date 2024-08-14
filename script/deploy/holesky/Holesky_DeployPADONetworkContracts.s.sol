@@ -195,8 +195,9 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             address(feeMgtImplementation),
             abi.encodeWithSelector(
                 FeeMgt.initialize.selector,
-                taskMgt,
-                computingPriceForETH
+                router,
+                computingPriceForETH,
+                networkOwner
             )
         );
 
@@ -205,7 +206,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(dataMgt))),
             address(dataMgtImplementation),
-            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt)
+            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt,networkOwner)
         );
         console.log("upgrade dataMgt");
 
@@ -214,9 +215,8 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             address(taskMgtImplementation),
             abi.encodeWithSelector(
                 TaskMgt.initialize.selector,
-                dataMgt,
-                feeMgt,
-                workerMgt
+                router,
+                networkOwner
             )
         );
         console.log("upgrade taskMgt");
@@ -282,18 +282,20 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             address(proxyAdmin)
         );
 
-        string memory deployed_addresses_output = vm.serializeAddress(
-            deployed_addresses,
-            "taskMgtImplementation",
-            address(taskMgtImplementation)
-        );
-
         vm.serializeAddress(deployed_addresses, "router", address(router));
         vm.serializeAddress(
             deployed_addresses,
             "routerImplementation",
             address(routerImplementation)
         );
+
+        string memory deployed_addresses_output = vm.serializeAddress(
+            deployed_addresses,
+            "taskMgtImplementation",
+            address(taskMgtImplementation)
+        );
+
+
 
         string memory finalJson = vm.serializeString(
             parent_object,
