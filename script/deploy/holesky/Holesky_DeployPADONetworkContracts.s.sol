@@ -206,7 +206,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(dataMgt))),
             address(dataMgtImplementation),
-            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt,networkOwner)
+            abi.encodeWithSelector(DataMgt.initialize.selector, router,networkOwner)
         );
         console.log("upgrade dataMgt");
 
