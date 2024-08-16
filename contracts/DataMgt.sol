@@ -49,8 +49,7 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     function prepareRegistry(
         EncryptionSchema calldata encryptionSchema
     ) external returns (bytes32 dataId, bytes[] memory publicKeys) {
-        require(encryptionSchema.t > 0, "DataMgt.prepareRegistry: t can not be zero");
-        require(encryptionSchema.n > 0, "DataMgt.prepareRegistry: n can not be zero");
+        require(encryptionSchema.t > 1, "DataMgt.prepareRegistry: t must be greater then one");
         require(encryptionSchema.t <= encryptionSchema.n, "DataMgt.prepareRegistry: t must be less then or equal to n");
         dataId = keccak256(abi.encode(encryptionSchema, registryCount));
         registryCount++;
