@@ -44,7 +44,7 @@ async function updateMetaUri() {
         throw new Error('AVS_META_URI is empty!')
     }
     // Send a transaction to the createNewTask function
-    const tx = await contract.updateAVSMetadataURI('');
+    const tx = await contract.updateAVSMetadataURI(metaUri);
 
     // Wait for the transaction to be mined
     const receipt = await tx.wait();
