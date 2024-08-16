@@ -99,7 +99,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
      * @notice Deploy  middleware contracts
      */
     function _deployPadoNeworkContracts(string memory config_data) internal {
-        uint256 computingPriceForETH = 0;
+        uint256 computingPriceForETH = 1000000000;
         proxyAdmin = new ProxyAdmin();
         emptyContract = EmptyContract(
             0x9690d52B1Ce155DB2ec5eCbF5a262ccCc7B3A6D2
@@ -206,7 +206,7 @@ contract Holesky_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
         proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(dataMgt))),
             address(dataMgtImplementation),
-            abi.encodeWithSelector(DataMgt.initialize.selector, workerMgt,networkOwner)
+            abi.encodeWithSelector(DataMgt.initialize.selector, router,networkOwner)
         );
         console.log("upgrade dataMgt");
 
