@@ -274,6 +274,9 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      */
     function _addFeeToken(string memory tokenSymbol, address tokenAddress, uint256 computingPrice) internal returns (bool) {
         require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length == 0, "FeeMgt._addFeeToken: token symbol already exists");
+        require(bytes(tokenSymbol).length > 0, "FeeMgt._addFeeToken: tokenSymbol can not be empty");
+        require(_isETH(tokenSymbol) || tokenAddress != address(0), "FeeMgt._addFeeToken: tokenAddress can not be empty");
+        require(computingPrice > 0, "FeeMgt._addFeeToken: computingPrice can not be zero");
 
         FeeTokenInfo memory feeTokenInfo = FeeTokenInfo({
             symbol: tokenSymbol,
