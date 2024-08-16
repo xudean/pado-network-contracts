@@ -23,6 +23,11 @@ interface IFeeMgt {
         uint256 computingPrice
     );
 
+    // emit in deleteFeeToken
+    event FeeTokenDeleted(
+        string indexed tokenSymbol
+    );
+
     // emit in transfer token
     event TokenTransfered(
         address from,
@@ -158,6 +163,12 @@ interface IFeeMgt {
      * @return Returns true if the updating is successful.
      */
     function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external returns (bool);
+
+    /**
+     * @notice Delete the fee token.
+     * @param tokenSymbol The fee token symbol.
+     */
+    function deleteFeeToken(string calldata tokenSymbol) external;
 
     /**
      * @notice Get the all fee tokens.

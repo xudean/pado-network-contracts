@@ -265,6 +265,18 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
         return true;
     }
+
+    /**
+     * @notice Delete the fee token.
+     * @param tokenSymbol The fee token symbol.
+     */
+    function deleteFeeToken(string calldata tokenSymbol) external onlyOwner {
+        require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length > 0, "FeeMgt.deleteFeeToken: token does not exist");
+        delete _feeTokenInfoForSymbol[tokenSymbol];
+
+        emit FeeTokenDeleted(tokenSymbol);
+    }
+
     /**
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
