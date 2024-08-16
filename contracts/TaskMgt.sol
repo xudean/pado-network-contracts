@@ -104,6 +104,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         require(dataInfo.status == DataStatus.REGISTERED, "TaskMgt.submitTask: data status is not REGISTERED");
         
         uint256 computingPrice = router.getFeeMgt().getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
+        require(computingPrice > 0, "TaskMgt.submitTask: computingPrice is not set");
         uint256 fee = priceInfo.price + workerIds.length * computingPrice;
         router.getFeeMgt().transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
