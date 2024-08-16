@@ -97,6 +97,10 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         bytes32 dataId
     ) external payable returns (bytes32) {
         DataInfo memory dataInfo = router.getDataMgt().getDataById(dataId);
+        require(dataInfo.dataId == dataId, "TaskMgt.submitTask: data does not exist");
+        require(taskType == TaskType.DATA_SHARING, "TaskMgt.submitTask: TaskType must be DATA_SHARING");
+        require(consumerPk.length > 0, "TaskMgt.submitTask: consumerPk can not be empty");
+
         PriceInfo memory priceInfo = dataInfo.priceInfo;
         bytes32[] memory workerIds = dataInfo.workerIds;
         EncryptionSchema memory encryptionSchema = dataInfo.encryptionSchema;
@@ -104,6 +108,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         require(dataInfo.status == DataStatus.REGISTERED, "TaskMgt.submitTask: data status is not REGISTERED");
         
         uint256 computingPrice = router.getFeeMgt().getFeeTokenBySymbol(priceInfo.tokenSymbol).computingPrice;
+        require(computingPrice > 0, "TaskMgt.submitTask: computingPrice is not set");
         uint256 fee = priceInfo.price + workerIds.length * computingPrice;
         router.getFeeMgt().transferToken{value: msg.value}(msg.sender, priceInfo.tokenSymbol, fee);
 
@@ -204,7 +209,8 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
             dataInfo.priceInfo.price,
             dataProviders
         );
-        emit TaskCompleted(task.taskId);
+        _popPendingTaskId(taskId);
+        emit TaskCompleted(taskId);
     }
 
     /**
@@ -221,17 +227,19 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
             task.submitter,
             task.tokenSymbol
         );
-        emit TaskFailed(task.taskId);
+        _popPendingTaskId(taskId);
+        emit TaskFailed(taskId);
     }
 
     /**
      * @notice Worker report the computing result.
      * @param taskId The task id to which the result is associated.
      * @param workerId The worker id.
-     * @param result The computing result content including zk proof.
+     * @param result The computing result content including zk proof, if the result is empty, then the task failed.
      * @return True if reporting is successful.
      */
     function reportResult(bytes32 taskId, bytes32 workerId, bytes calldata result) external returns (bool) {
+        require(taskId != bytes32(0), "TaskMgt.reportResult: taskId can not be empty");
         Task storage task = _allTasks[taskId];
         Worker memory worker = router.getWorkerMgt().getWorkerById(workerId);
         require(msg.sender == worker.owner, "TaskMgt.reportResult: caller is not worker owner");
@@ -247,10 +255,15 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         computingInfo.hasReported[workerIndex] = true;
         computingInfo.reportCount = computingInfo.reportCount + 1;
         
-        _popOnReportingTask(taskId, workerId);
-        router.getFeeMgt().payWorker(taskId, task.submitter, worker.owner, task.tokenSymbol);
+        _popPendingTaskIdForWorker(taskId, workerId);
+        if (result.length > 0) {
+            router.getFeeMgt().payWorker(taskId, task.submitter, worker.owner, task.tokenSymbol);
+        }
 
-        if (computingInfo.reportCount == computingInfo.n) {
+        if (result.length == 0) {
+            _onTaskFailed(taskId);
+        }
+        else if (computingInfo.reportCount == computingInfo.n) {
             _onTaskCompleted(taskId);
         }
 
@@ -260,11 +273,11 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     }
 
     /**
-     * @notice pop on reporting task
+     * @notice pop pending task id for worker
      * @param taskId The task id
      * @param workerId The worker id
      */
-    function _popOnReportingTask(bytes32 taskId, bytes32 workerId) internal {
+    function _popPendingTaskIdForWorker(bytes32 taskId, bytes32 workerId) internal {
         bytes32[] storage taskIds = _pendingTaskIdForWorker[workerId];
         (bool bTaskIdForWorker, uint256 taskIndex) = _find(taskId, taskIds);
         require(bTaskIdForWorker, "TaskMgt.reportResult: task id not in pendingTaskIdForWorker");
@@ -272,6 +285,22 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         taskIds.pop();
 
     }
+
+   /**
+    * @notice pop pending task id
+    * @param taskId The task id
+    */
+   function _popPendingTaskId(bytes32 taskId) internal {
+       Task storage task = _allTasks[taskId];
+       if (task.computingInfo.reportCount < task.computingInfo.workerIds.length) {
+           ComputingInfo storage computingInfo = task.computingInfo;
+           for (uint256 i = 0; i < computingInfo.workerIds.length; i++) {
+               if (!computingInfo.hasReported[i]) {
+                   _popPendingTaskIdForWorker(taskId, computingInfo.workerIds[i]);
+               }
+           }
+       }
+   }
 
     /**
      * @notice Update task

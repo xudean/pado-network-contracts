@@ -69,6 +69,28 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         return 2;
     }
 
+    function deleteFeeToken(string memory tokenSymbol) public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        feeMgt.deleteFeeToken(tokenSymbol);
+
+        vm.prank(contractOwner);
+        vm.expectRevert("FeeMgt.deleteFeeToken: token does not exist");
+        feeMgt.deleteFeeToken("SomeETH");
+
+        vm.prank(contractOwner);
+        feeMgt.deleteFeeToken(tokenSymbol);
+
+        vm.prank(contractOwner);
+        vm.expectRevert("FeeMgt.deleteFeeToken: token does not exist");
+        feeMgt.deleteFeeToken(tokenSymbol);
+    }
+
+    function test_deleteFeeToken() public {
+        test_addFeeToken();
+        deleteFeeToken("TEST");
+        deleteFeeToken("bTEST");
+    }
+
     function test_getFeeTokens() public {
         FeeTokenInfo[] memory oldTokenList = feeMgt.getFeeTokens();
         uint256 addedNum = test_addFeeToken();

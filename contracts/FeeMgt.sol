@@ -252,8 +252,9 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns true if the updating is successful.
      */
     function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {
+        require(bytes(tokenSymbol).length > 0, "FeeMgt.updateFeeToken: tokenSymbol can not be empty");
         FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
-        require(feeTokenInfo.tokenAddress != address(0), "FeeMgt.updateFeeToken: fee token does not exist");
+        require(bytes(feeTokenInfo.symbol).length > 0, "FeeMgt.updateFeeToken: fee token does not exist");
 
         if (tokenAddress != address(0)) {
             feeTokenInfo.tokenAddress = tokenAddress;
@@ -264,6 +265,18 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
         return true;
     }
+
+    /**
+     * @notice Delete the fee token.
+     * @param tokenSymbol The fee token symbol.
+     */
+    function deleteFeeToken(string calldata tokenSymbol) external onlyOwner {
+        require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length > 0, "FeeMgt.deleteFeeToken: token does not exist");
+        delete _feeTokenInfoForSymbol[tokenSymbol];
+
+        emit FeeTokenDeleted(tokenSymbol);
+    }
+
     /**
      * @notice Add the fee token.
      * @param tokenSymbol The new fee token symbol.
@@ -272,7 +285,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns true if the adding is successful.
      */
     function _addFeeToken(string memory tokenSymbol, address tokenAddress, uint256 computingPrice) internal returns (bool) {
-        require(_feeTokenInfoForSymbol[tokenSymbol].tokenAddress == address(0), "FeeMgt._addFeeToken: token symbol already exists");
+        require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length == 0, "FeeMgt._addFeeToken: token symbol already exists");
+        require(bytes(tokenSymbol).length > 0, "FeeMgt._addFeeToken: tokenSymbol can not be empty");
+        require(_isETH(tokenSymbol) || tokenAddress != address(0), "FeeMgt._addFeeToken: tokenAddress can not be empty");
+        require(computingPrice > 0, "FeeMgt._addFeeToken: computingPrice can not be zero");
 
         FeeTokenInfo memory feeTokenInfo = FeeTokenInfo({
             symbol: tokenSymbol,
@@ -311,9 +327,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory) {
         FeeTokenInfo storage info = _feeTokenInfoForSymbol[tokenSymbol]; 
 
-        if (!_isETH(tokenSymbol)) {
-            require(info.tokenAddress != address(0), "FeeMgt.getFeeTokenBySymbol: fee token does not exist");
-        }
+        require(bytes(info.symbol).length > 0, "FeeMgt.getFeeTokenBySymbol: fee token does not exist");
         return info;
     }
 
@@ -325,7 +339,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         if (_isETH(tokenSymbol)) {
             return true;
         }
-        return _feeTokenInfoForSymbol[tokenSymbol].tokenAddress != address(0);
+        return bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length > 0;
     }
 
     /**

@@ -49,6 +49,8 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     function prepareRegistry(
         EncryptionSchema calldata encryptionSchema
     ) external returns (bytes32 dataId, bytes[] memory publicKeys) {
+        require(encryptionSchema.t > 1, "DataMgt.prepareRegistry: t must be greater then one");
+        require(encryptionSchema.t <= encryptionSchema.n, "DataMgt.prepareRegistry: t must be less then or equal to n");
         dataId = keccak256(abi.encode(encryptionSchema, registryCount));
         registryCount++;
 
@@ -105,6 +107,9 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
         require(dataInfo.dataId == dataId, "DataMgt.register: data does not exist");
         require(dataInfo.status == DataStatus.REGISTERING, "DataMgt.register: data status is not REGISTERING");
         require(dataInfo.owner == msg.sender, "DataMgt.register: caller is not data owner");
+        require(dataContent.length > 0, "DataMgt.register: dataContent can not be empty");
+        require(router.getFeeMgt().isSupportToken(priceInfo.tokenSymbol), "DataMgt.register: tokenSymbol is not supported");
+        require(priceInfo.price > 0, "DataMgt.register: dataPrice is not set");
 
         dataInfo.dataTag = dataTag;
         dataInfo.priceInfo = priceInfo;
