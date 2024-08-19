@@ -200,8 +200,8 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
 
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit TokenWithdrawn(msg.sender, tokenSymbol, 5);
-        feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
+        emit TokenWithdrawn(address(taskMgt), tokenSymbol, 5);
+        feeMgt.withdrawToken(address(taskMgt), tokenSymbol, 5);
 
         uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
         uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
