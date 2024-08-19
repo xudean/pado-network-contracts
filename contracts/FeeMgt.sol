@@ -88,7 +88,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     ) external {
         require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
 
-        Balance storage balance = _balanceForEOA[to][tokenSymbol];
+        Balance storage balance = _balanceForEOA[msg.sender][tokenSymbol];
         require(balance.free >= amount, "FeeMgt.withdrawToken: insufficient free balance");
         balance.free -= amount;
         if (_isETH(tokenSymbol)) {
