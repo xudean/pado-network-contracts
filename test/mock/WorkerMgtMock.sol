@@ -307,6 +307,7 @@ contract WorkerMgtMock is IWorkerMgt, OwnableUpgradeable {
         _allWorkers[workerId].status = WorkerStatus.UNREGISTERED;
         //remove from workerIds
         _removeWorkerId(workerId);
+		return true;
     }
 
     //-----------------remove element in _workerIds-------------------

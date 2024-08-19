@@ -95,9 +95,9 @@ struct FeeTokenInfo {
     uint256 computingPrice; // computing price.
 }
 /**
- * @notice A struct representing allowance for data user.
+ * @notice A struct representing balance for data user.
  */
-struct Allowance {
+struct Balance {
     uint256 free;
     uint256 locked;
 }

@@ -30,6 +30,9 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     // workerId => pendingTaskIds[]
     mapping(bytes32 workerId => bytes32[] taskIds) private _pendingTaskIdForWorker;
 
+    // pending task id array
+    bytes32[] private _pendingTaskIds;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -147,6 +150,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         });
 
         _allTasks[taskId] = task;
+        _pendingTaskIds.push(taskId);
         
         for (uint256 i = 0; i < workerIds.length; i++) {
             _pendingTaskIdForWorker[workerIds[i]].push(taskId);
@@ -158,6 +162,9 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
             fee
         );
         emit TaskDispatched(taskId, workerIds);
+
+        // update timeouted task
+        updateTasks();
 
         return taskId;
     }
@@ -300,6 +307,12 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
                }
            }
        }
+
+       (bool b, uint256 taskIndex) = _find(taskId, _pendingTaskIds);
+       require(b, "TaskMgt._popPendingTaskId: can not find pending task id");
+
+       _pendingTaskIds[taskIndex] = _pendingTaskIds[_pendingTaskIds.length - 1];
+       _pendingTaskIds.pop();
    }
 
     /**
@@ -307,7 +320,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
      * @param taskId The task id.
      * @return Return task status.
      */
-    function updateTask(bytes32 taskId) external returns (TaskStatus) {
+    function updateTask(bytes32 taskId) public returns (TaskStatus) {
         Task storage task = _allTasks[taskId];
         require(task.status == TaskStatus.PENDING, "TaskMgt.updateTask: task status is not pending");
 
@@ -324,6 +337,23 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
             _onTaskFailed(taskId);
         }
         return task.status;
+    }
+
+    function updateTasks() public {
+        if (_pendingTaskIds.length == 0) {
+            return;
+        }
+
+        uint64 currentTime = uint64(block.timestamp);
+
+        for (uint256 i = 0; i < _pendingTaskIds.length; i++) {
+            bytes32 taskId = _pendingTaskIds[i];
+            Task storage task = _allTasks[taskId];
+            
+            if (currentTime >= task.time + taskTimeout) {
+                updateTask(taskId);
+            }
+        }
     }
 
     /**
@@ -344,6 +374,19 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     }
 
     
+    /**
+     * @notice Get pending tasks.
+     * @return Returns an array of pending tasks
+     */
+    function getPendingTasks() external view returns (Task[] memory) {
+        Task[] memory tasks = new Task[](_pendingTaskIds.length);
+
+        for (uint256 i = 0; i < _pendingTaskIds.length; i++) {
+            tasks[i] = _allTasks[_pendingTaskIds[i]];
+        }
+        return tasks;
+    }
+
     /**
      * @notice Get a completed task.
      * @param taskId The task id.

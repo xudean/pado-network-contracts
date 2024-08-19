@@ -15,7 +15,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Allowance, FeeTokenInfo, TaskStatus, Task, TaskReportStatus} from "../contracts/types/Common.sol";
+import {TaskType, Worker, DataInfo, PriceInfo, EncryptionSchema, Balance, FeeTokenInfo, TaskStatus, Task, TaskReportStatus} from "../contracts/types/Common.sol";
 
 contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
     bytes32 dataId;
@@ -74,9 +74,9 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function submitTask(string memory tokenSymbol) internal {
         bytes memory consumerPk = bytes("consumerPk");
-        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
-        assertEq(oldAllowance.free, 0, "oldAllowance.free not correct");
-        assertEq(oldAllowance.locked, 0, "oldAllowance.locked not correct");
+        Balance memory oldBalance = feeMgt.getBalance(msg.sender, tokenSymbol);
+        assertEq(oldBalance.free, 0, "oldBalance.free not correct");
+        assertEq(oldBalance.locked, 0, "oldBalance.locked not correct");
         erc20.mint(msg.sender, 100);
 
         DataInfo memory dataInfo = dataMgt.getDataById(dataId);
@@ -102,13 +102,15 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
                 dataId
             );
         }
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
-        assertEq(allowance.free, 0, "allowance.free not correct");
-        assertEq(allowance.locked, feeAmount, "allowance.locked not correct");
+        Balance memory balance = feeMgt.getBalance(msg.sender, tokenSymbol);
+        assertEq(balance.free, 0, "balance.free not correct");
+        assertEq(balance.locked, feeAmount, "balance.locked not correct");
     }
 
     function test_submitTask() public {
         submitTask(TOKEN_SYMBOL);
+        Task[] memory tasks = taskMgt.getPendingTasks();
+        assertEq(tasks.length, 1);
     }
 
     function test_reportResult() public {

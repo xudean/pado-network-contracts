@@ -8,7 +8,7 @@ import {IFeeMgt} from "../contracts/interface/IFeeMgt.sol";
 import {FeeMgt} from "../contracts/FeeMgt.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
-import {FeeTokenInfo, Allowance, TaskStatus} from "../contracts/types/Common.sol";
+import {FeeTokenInfo, Balance, TaskStatus} from "../contracts/types/Common.sol";
 import {IFeeMgtEvents} from "./events/IFeeMgtEvents.sol";
 
 contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
@@ -130,9 +130,9 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 balance = address(feeMgt).balance;
         assertEq(balance, 5, "balance error");
 
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, "ETH");
-        assertEq(allowance.free, 5, "allowance.free error");
-        assertEq(allowance.locked, 0, "allowance.locked error");
+        Balance memory bal = feeMgt.getBalance(msg.sender, "ETH");
+        assertEq(bal.free, 5, "balance.free error");
+        assertEq(bal.locked, 0, "balance.locked error");
     }
 
     function test_transferToken_TEST() public {
@@ -168,9 +168,9 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 balance = erc20.balanceOf(address(feeMgt));
         assertEq(balance, 5, "balance error");
 
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, "TEST");
-        assertEq(allowance.free, 5, "allowance.free error");
-        assertEq(allowance.locked, 0, "allowance.locked error");
+        Balance memory bal = feeMgt.getBalance(msg.sender, "TEST");
+        assertEq(bal.free, 5, "balance.free error");
+        assertEq(bal.locked, 0, "balance.locked error");
     }
 
     function test_transferToken(string memory tokenSymbol) internal {
@@ -194,7 +194,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         feeMgt.withdrawToken(msg.sender, "TESTETH", 5);
 
         vm.prank(address(taskMgt));
-        vm.expectRevert("FeeMgt.withdrawToken: insufficient free allowance");
+        vm.expectRevert("FeeMgt.withdrawToken: insufficient free balance");
         feeMgt.withdrawToken(msg.sender, tokenSymbol, 6);
 
 
@@ -256,12 +256,12 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     function test_lock(string memory tokenSymbol) internal {
         test_transferToken(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
-        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        Balance memory oldBalance = feeMgt.getBalance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
 
         vm.prank(address(taskMgt));
-        vm.expectRevert("FeeMgt.lock: Insufficient free allowance");
+        vm.expectRevert("FeeMgt.lock: Insufficient free balance");
         feeMgt.lock(
             info.taskId,
             info.submitter,
@@ -279,9 +279,9 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
             lockedAmount
         );
 
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
-        assertEq(oldAllowance.free - lockedAmount, allowance.free, "allowance.free change error");
-        assertEq(oldAllowance.locked + lockedAmount, allowance.locked, "allowance.locked change error");
+        Balance memory balance = feeMgt.getBalance(msg.sender, tokenSymbol);
+        assertEq(oldBalance.free - lockedAmount, balance.free, "balance.free change error");
+        assertEq(oldBalance.locked + lockedAmount, balance.locked, "balance.locked change error");
     }
 
     function test_lock_ETH() public {
@@ -294,7 +294,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     function test_unlock(string memory tokenSymbol) internal {
         test_lock(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
-        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        Balance memory oldBalance = feeMgt.getBalance(msg.sender, tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
@@ -306,9 +306,9 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
             info.tokenSymbol
         );
 
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
-        assertEq(oldAllowance.free + lockedAmount, allowance.free, "allowance.free change error");
-        assertEq(oldAllowance.locked - lockedAmount, allowance.locked, "allowance.locked change error");
+        Balance memory balance = feeMgt.getBalance(msg.sender, tokenSymbol);
+        assertEq(oldBalance.free + lockedAmount, balance.free, "balance.free change error");
+        assertEq(oldBalance.locked - lockedAmount, balance.locked, "balance.locked change error");
     }
 
     function test_unlock_ETH() public {
@@ -321,7 +321,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     function test_settle(string memory tokenSymbol) internal {
         test_lock(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
-        Allowance memory oldAllowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
+        Balance memory oldBal = feeMgt.getBalance(msg.sender, tokenSymbol);
         uint256 oldBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
         SubmittionInfo memory info = getTaskSubmittionInfo(tokenSymbol);
@@ -354,20 +354,20 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         for (uint256 i = 0; i < submittionInfo.workerOwners.length; i++) {
             vm.prank(submittionInfo.workerOwners[i]);
             feeMgt.withdrawToken(submittionInfo.workerOwners[i], tokenSymbol, 1);
-            uint256 bal = getBalance(submittionInfo.workerOwners[i], tokenSymbol);
-            assertEq(bal, 1, "worker owner balance error");
+            uint256 balance3 = getBalance(submittionInfo.workerOwners[i], tokenSymbol);
+            assertEq(balance3, 1, "worker owner balance error");
         }
 
         for (uint256 i = 0; i < submittionInfo.dataProviders.length; i++) {
             vm.prank(submittionInfo.dataProviders[i]);
             feeMgt.withdrawToken(submittionInfo.dataProviders[i], tokenSymbol, 1);
-            uint256 bal = getBalance(submittionInfo.dataProviders[i], tokenSymbol);
-            assertEq(bal, 1, "data provider balance error");
+            uint256 balance2 = getBalance(submittionInfo.dataProviders[i], tokenSymbol);
+            assertEq(balance2, 1, "data provider balance error");
         }
 
-        Allowance memory allowance = feeMgt.getAllowance(msg.sender, tokenSymbol);
-        assertEq(oldAllowance.free, allowance.free);
-        assertEq(oldAllowance.locked - lockedAmount, allowance.locked);
+        Balance memory bal = feeMgt.getBalance(msg.sender, tokenSymbol);
+        assertEq(oldBal.free, bal.free);
+        assertEq(oldBal.locked - lockedAmount, bal.locked);
 
         uint256 balance = getBalance(msg.sender, tokenSymbol);
         uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
@@ -375,8 +375,8 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         assertEq(oldBalance, balance);
         assertEq(oldFeeMgtBalance - lockedAmount, feeMgtBalance);
 
-        assertEq(allowance.free, 1);
-        assertEq(allowance.locked, 0);
+        assertEq(bal.free, 1);
+        assertEq(bal.locked, 0);
         assertEq(feeMgtBalance, 1);
     }
 
