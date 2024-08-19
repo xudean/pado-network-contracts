@@ -340,6 +340,10 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     }
 
     function updateTasks() public {
+        if (_pendingTaskIds.length == 0) {
+            return;
+        }
+
         uint64 currentTime = uint64(block.timestamp);
 
         for (uint256 i = 0; i < _pendingTaskIds.length; i++) {
@@ -370,6 +374,19 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
     }
 
     
+    /**
+     * @notice Get pending tasks.
+     * @return Returns an array of pending tasks
+     */
+    function getPendingTasks() external view returns (Task[] memory) {
+        Task[] memory tasks = new Task[](_pendingTaskIds.length);
+
+        for (uint256 i = 0; i < _pendingTaskIds.length; i++) {
+            tasks[i] = _allTasks[_pendingTaskIds[i]];
+        }
+        return tasks;
+    }
+
     /**
      * @notice Get a completed task.
      * @param taskId The task id.

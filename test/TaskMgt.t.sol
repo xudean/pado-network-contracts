@@ -109,6 +109,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
 
     function test_submitTask() public {
         submitTask(TOKEN_SYMBOL);
+        Task[] memory tasks = taskMgt.getPendingTasks();
+        assertEq(tasks.length, 1);
     }
 
     function test_reportResult() public {

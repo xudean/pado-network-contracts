@@ -88,6 +88,12 @@ interface ITaskMgt {
     function getPendingTasksByWorkerId(bytes32 workerId) external view returns (Task[] memory);
 
     /**
+     * @notice Get pending tasks.
+     * @return Returns an array of pending tasks
+     */
+    function getPendingTasks() external view returns (Task[] memory);
+
+    /**
      * @notice Get a completed task.
      * @param taskId The task id.
      * @return Returns The completed task.
