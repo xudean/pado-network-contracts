@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IFeeMgt} from "./interface/IFeeMgt.sol";
 import {ITaskMgt} from "./interface/ITaskMgt.sol";
 import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
-import {FeeTokenInfo, Allowance, TaskStatus} from "./types/Common.sol";
+import {FeeTokenInfo, Balance, TaskStatus} from "./types/Common.sol";
 
 /**
  * @title FeeMgt
@@ -23,8 +23,8 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     // tokenSymbol[]
     string[] private _symbolList;
 
-    // eoa => tokenSymbol => allowance
-    mapping(address eoa => mapping(string tokenSymbol => Allowance allowance)) private _allowanceForEOA;
+    // eoa => tokenSymbol => balance
+    mapping(address eoa => mapping(string tokenSymbol => Balance balance)) private _balanceForEOA;
 
     // taskId => amount
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
@@ -68,9 +68,9 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
             IERC20(tokenAddress).transferFrom(from, address(this), amount);
         }
 
-        Allowance storage allowance = _allowanceForEOA[from][tokenSymbol];
+        Balance storage balance = _balanceForEOA[from][tokenSymbol];
 
-        allowance.free += amount;
+        balance.free += amount;
 
         emit TokenTransfered(from, tokenSymbol, amount);
     }
@@ -88,9 +88,9 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     ) external {
         require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
 
-        Allowance storage allowance = _allowanceForEOA[to][tokenSymbol];
-        require(allowance.free >= amount, "FeeMgt.withdrawToken: insufficient free allowance");
-        allowance.free -= amount;
+        Balance storage balance = _balanceForEOA[to][tokenSymbol];
+        require(balance.free >= amount, "FeeMgt.withdrawToken: insufficient free balance");
+        balance.free -= amount;
         if (_isETH(tokenSymbol)) {
             (bool res, )  = payable(address(to)).call{value: amount}(new bytes(0));
             require(res, "FeeMgt.withdrawToken: call error");
@@ -121,12 +121,12 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.lock: not supported token");
 
-        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
+        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
 
-        require(allowance.free >= toLockAmount, "FeeMgt.lock: Insufficient free allowance");
+        require(balance.free >= toLockAmount, "FeeMgt.lock: Insufficient free balance");
 
-        allowance.free -= toLockAmount;
-        allowance.locked += toLockAmount;
+        balance.free -= toLockAmount;
+        balance.locked += toLockAmount;
         _lockedAmountForTaskId[taskId] = toLockAmount;
 
         emit FeeLocked(taskId, tokenSymbol, toLockAmount);
@@ -149,11 +149,11 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         uint256 toUnlockAmount = _lockedAmountForTaskId[taskId];
         require(toUnlockAmount > 0, "FeeMgt.unlock: locked amount is zero");
 
-        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
-        require(allowance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked allowance");
+        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
+        require(balance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked balance");
 
-        allowance.free += toUnlockAmount;
-        allowance.locked -= toUnlockAmount;
+        balance.free += toUnlockAmount;
+        balance.locked -= toUnlockAmount;
         _lockedAmountForTaskId[taskId] -= toUnlockAmount;
 
         emit FeeUnlocked(taskId, tokenSymbol, toUnlockAmount);
@@ -181,8 +181,8 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         require(lockedAmount >= computingPrice, "FeeMgt.payWorker: insufficient lockedAmount");
         _lockedAmountForTaskId[taskId] -= computingPrice;
 
-        _allowanceForEOA[submitter][tokenSymbol].locked -= computingPrice;
-        _allowanceForEOA[workerOwner][tokenSymbol].free += computingPrice;
+        _balanceForEOA[submitter][tokenSymbol].locked -= computingPrice;
+        _balanceForEOA[workerOwner][tokenSymbol].free += computingPrice;
 
     }
 
@@ -206,14 +206,14 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 
-        Allowance storage allowance = _allowanceForEOA[submitter][tokenSymbol];
+        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
 
-        uint256 expectedAllowance = dataPrice * dataProviders.length;
+        uint256 expectedBalance = dataPrice * dataProviders.length;
 
-        require(expectedAllowance <= allowance.locked, "FeeMgt.settle: insufficient locked allowance");
-        require(lockedAmount >= expectedAllowance, "FeeMgt.settle: locked not enough");
+        require(expectedBalance <= balance.locked, "FeeMgt.settle: insufficient locked balance");
+        require(lockedAmount >= expectedBalance, "FeeMgt.settle: locked not enough");
 
-        if (expectedAllowance > 0) {
+        if (expectedBalance > 0) {
             _settle(
                 taskId,
                 submitter,
@@ -222,10 +222,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
                 dataProviders
             );
         }
-        if (lockedAmount > expectedAllowance) {
-            uint256 toReturnAmount = lockedAmount - expectedAllowance;
-            allowance.locked -= toReturnAmount;
-            allowance.free += toReturnAmount;
+        if (lockedAmount > expectedBalance) {
+            uint256 toReturnAmount = lockedAmount - expectedBalance;
+            balance.locked -= toReturnAmount;
+            balance.free += toReturnAmount;
             
             emit FeeUnlocked(taskId, tokenSymbol, toReturnAmount);
         }
@@ -343,13 +343,13 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     }
 
     /**
-     * @notice Get allowance info.
+     * @notice Get balance info.
      * @param eoa The address of EOA
      * @param tokenSymbol The token symbol for the EOA
-     * @return Allowance for the EOA
+     * @return Balance for the EOA
      */
-    function getAllowance(address eoa, string calldata tokenSymbol) external view returns (Allowance memory) {
-        return _allowanceForEOA[eoa][tokenSymbol];
+    function getBalance(address eoa, string calldata tokenSymbol) external view returns (Balance memory) {
+        return _balanceForEOA[eoa][tokenSymbol];
     }
 
     /**
@@ -379,10 +379,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         uint256 settledFee = 0;
 
         for (uint256 i = 0; i < dataProviders.length; i++) {
-            _allowanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
+            _balanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
             settledFee += dataPrice;
         }
-        _allowanceForEOA[submitter][tokenSymbol].locked -= settledFee;
+        _balanceForEOA[submitter][tokenSymbol].locked -= settledFee;
         emit FeeSettled(taskId, tokenSymbol, settledFee);
     }
 

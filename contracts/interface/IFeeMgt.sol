@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 import {ITaskMgt} from "./ITaskMgt.sol";
-import {Allowance, FeeTokenInfo, TaskStatus} from "../types/Common.sol";
+import {Balance, FeeTokenInfo, TaskStatus} from "../types/Common.sol";
 
 /**
  * @title IFeeMgt
@@ -190,11 +190,11 @@ interface IFeeMgt {
     function isSupportToken(string calldata tokenSymbol) external view returns (bool);
 
     /**
-     * @notice Get allowance info.
+     * @notice Get balance info.
      * @param dataUser The address of data user
      * @param tokenSymbol The token symbol for the data user
-     * @return Allowance for the data user
+     * @return Balance for the data user
      */
-    function getAllowance(address dataUser, string calldata tokenSymbol) external view returns (Allowance memory);
+    function getBalance(address dataUser, string calldata tokenSymbol) external view returns (Balance memory);
 
 }
