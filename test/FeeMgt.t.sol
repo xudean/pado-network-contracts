@@ -189,19 +189,19 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 oldSenderBalance = getBalance(msg.sender, tokenSymbol);
         uint256 oldFeeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
 
-        vm.prank(address(taskMgt));
+        vm.prank(address(msg.sender));
         vm.expectRevert("FeeMgt.withdrawToken: not supported token"); 
         feeMgt.withdrawToken(msg.sender, "TESTETH", 5);
 
-        vm.prank(address(taskMgt));
+        vm.prank(address(msg.sender));
         vm.expectRevert("FeeMgt.withdrawToken: insufficient free balance");
         feeMgt.withdrawToken(msg.sender, tokenSymbol, 6);
 
 
-        vm.prank(address(taskMgt));
+        vm.prank(address(msg.sender));
         vm.expectEmit(true, true, true, true);
-        emit TokenWithdrawn(address(taskMgt), tokenSymbol, 5);
-        feeMgt.withdrawToken(address(taskMgt), tokenSymbol, 5);
+        emit TokenWithdrawn(address(msg.sender), tokenSymbol, 5);
+        feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
 
         uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
         uint256 feeMgtBalance = getBalance(address(feeMgt), tokenSymbol);
