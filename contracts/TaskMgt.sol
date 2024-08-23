@@ -99,7 +99,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         bytes calldata consumerPk,
         bytes32 dataId
     ) external payable returns (bytes32) {
-        DataInfo memory dataInfo = router.getDataMgt().getDataById(dataId);
+        DataInfo memory dataInfo = router.getDataMgt().getPermittedDataById(dataId, msg.sender);
         require(dataInfo.dataId == dataId, "TaskMgt.submitTask: data does not exist");
         require(taskType == TaskType.DATA_SHARING, "TaskMgt.submitTask: TaskType must be DATA_SHARING");
         require(consumerPk.length > 0, "TaskMgt.submitTask: consumerPk can not be empty");

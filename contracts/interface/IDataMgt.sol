@@ -76,7 +76,7 @@ interface IDataMgt {
     * @param dataId   the identifier of the data
     * @return Return true if the data is permitted for the data user, else false
     */
-   function isPermitted(bytes32 dataId, address dataUser) external returns (bool);
+   function isDataPermitted(bytes32 dataId, address dataUser) external returns (bool);
 
    /**
     * @notice Get the data if it is permitted for the data user, else revert

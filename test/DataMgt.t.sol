@@ -7,12 +7,47 @@ import {DataMgt} from "../contracts/DataMgt.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
 import {DataInfo, PriceInfo, DataStatus, EncryptionSchema} from "../contracts/types/Common.sol";
 import {IDataMgtEvents} from "./events/IDataMgtEvents.sol";
+import {DataPermissionAlwaysTrue, DataPermissionAlwaysFalse} from "./mock/DataPermissionMock.sol";
 
 contract DataMgtTest is MockDeployer, IDataMgtEvents {
     bytes32 public registryId;
 
     function setUp() public {
         _deployAll();
+    }
+
+    function registerDataPermission(bool trueOrFalse) public {
+        bytes[] memory publicKeys;
+        vm.expectEmit(false, true, true, false);
+        emit DataPrepareRegistry(registryId, publicKeys);
+        (registryId, publicKeys) = dataMgt.prepareRegistry(EncryptionSchema({
+            t: 2,
+            n: 3
+        }));
+
+        PriceInfo memory priceInfo = PriceInfo({
+            tokenSymbol: "ETH",
+            price: 2
+        });
+
+        bytes memory dataContent = bytes("test");
+
+        address[] memory permissionContracts = new address[](1);
+        if (trueOrFalse) {
+            DataPermissionAlwaysTrue truePermission = new DataPermissionAlwaysTrue();
+            permissionContracts[0] = address(truePermission);
+        }
+        else {
+            DataPermissionAlwaysFalse falsePermission = new DataPermissionAlwaysFalse();
+            permissionContracts[0] = address(falsePermission);
+        }
+        dataMgt.register(
+            registryId,
+            "data tag",
+            priceInfo,
+            dataContent,
+            permissionContracts    
+        );
     }
 
     function test_Registry() public {
@@ -51,6 +86,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             permissions
         );
 
+
+
         vm.expectEmit(true, true, true, true);
         emit DataRegistered(registryId);
         bytes32 dataId = dataMgt.register(
@@ -81,6 +118,23 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
         DataInfo memory dataInfo = dataMgt.getDataById(registryId);
         assertEq(dataInfo.dataId, registryId);
+    }
+
+    function test_getPermittedDataById_false() public {
+        registerDataPermission(false);
+        vm.expectRevert("DataMgt.getPermittedDataById: data is not permitted for data user");
+        dataMgt.getPermittedDataById(registryId, msg.sender);
+        
+        bool b = dataMgt.isDataPermitted(registryId, msg.sender);
+        assertEq(b, false, "is data permitted error");
+    }
+
+    function test_getPermittedDataById_true() public {
+        registerDataPermission(true);
+        dataMgt.getPermittedDataById(registryId, msg.sender);
+
+        bool b = dataMgt.isDataPermitted(registryId, msg.sender);
+        assertEq(b, true, "is data permitted error");
     }
 
     function test_getDataByOwner() public {

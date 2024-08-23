@@ -191,7 +191,7 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     * @param dataId   the identifier of the data
     * @return Return true if the data is permitted for the data user, else false
     */
-   function isPermitted(bytes32 dataId, address dataUser) public returns (bool) {
+   function isDataPermitted(bytes32 dataId, address dataUser) public returns (bool) {
        DataInfo storage dataInfo = _dataInfos[dataId];
        require(dataInfo.dataId == dataId, "DataMgt.isPermitted: data does not exist");
 
@@ -215,7 +215,7 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     * @return Return the data if it is permitted for the data user, else revert
     */
    function getPermittedDataById(bytes32 dataId, address dataUser) external returns (DataInfo memory) {
-       bool b = isPermitted(dataId, dataUser);
+       bool b = isDataPermitted(dataId, dataUser);
        require(b, "DataMgt.getPermittedDataById: data is not permitted for data user");
        return _dataInfos[dataId];
    }
