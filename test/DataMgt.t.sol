@@ -122,8 +122,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
     function test_getPermittedDataById_false() public {
         registerDataPermission(false);
-        vm.expectRevert("DataMgt.getPermittedDataById: data is not permitted for data user");
-        dataMgt.getPermittedDataById(registryId, msg.sender);
+        vm.expectRevert("DataMgt.checkAndGetPermittedDataById: data is not permitted for data user");
+        dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
         
         bool b = dataMgt.isDataPermitted(registryId, msg.sender);
         assertEq(b, false, "is data permitted error");
@@ -131,7 +131,7 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
     function test_getPermittedDataById_true() public {
         registerDataPermission(true);
-        dataMgt.getPermittedDataById(registryId, msg.sender);
+        dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
 
         bool b = dataMgt.isDataPermitted(registryId, msg.sender);
         assertEq(b, true, "is data permitted error");
