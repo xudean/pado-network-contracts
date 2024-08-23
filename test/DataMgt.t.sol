@@ -30,13 +30,15 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         });
 
         bytes memory dataContent = bytes("test");
+        address[] memory permissions = new address[](0);
 
         vm.expectRevert("DataMgt.register: data does not exist");
         dataMgt.register(
             keccak256("registryId"),
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         vm.prank(msg.sender);
@@ -45,7 +47,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         vm.expectEmit(true, true, true, true);
@@ -54,7 +57,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         vm.expectRevert("DataMgt.register: data status is not REGISTERING");
@@ -62,7 +66,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         assertEq(registryId, dataId);
