@@ -189,6 +189,7 @@ contract Mainnet_DeployPADONetworkContracts is Utils, ExistingDeploymentParser {
             abi.encodeWithSelector(
                 WorkerMgt.initialize.selector,
                 registryCoordinator,
+                address(dataMgt),
                 networkOwner
             )
         );
