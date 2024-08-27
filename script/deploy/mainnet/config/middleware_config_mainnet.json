@@ -12,7 +12,7 @@
     "initialPausedStatus": 1
   },
 
-  "minimumStakes": [],
+  "minimumStakes": [0],
 
   "strategyWeights": [
     [

@@ -11,5 +11,9 @@
     "taskMgtImplementation": "0x6Cfe428E6B33b97AA41F08cd79dDf63e46DC52d0",
     "workerMgt": "0x05cB7A91269A436b2C184F1Fc3A5Bf8A53566387",
     "workerMgtImplementation": "0x900B89C590bc992Afc7c1292A304d9e0Bd68c929"
+  },
+  "chainInfo": {
+    "chainId": 17000,
+    "deploymentBlock": 2136637
   }
 }
