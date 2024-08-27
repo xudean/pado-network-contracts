@@ -65,7 +65,8 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            new address[](0)
         );
 
         assertEq(registryId, dataid);

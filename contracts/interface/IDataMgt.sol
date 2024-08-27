@@ -32,13 +32,15 @@ interface IDataMgt {
      * @param dataTag The tag of data, providing basic information about data.
      * @param priceInfo The price infomation of data.
      * @param dataContent The content of data.
+     * @param permissions The contract addresses for data permission control, can be empty
      * @return The UID of the data
      */
     function register(
         bytes32 dataId,
         string calldata dataTag,
         PriceInfo calldata priceInfo,
-        bytes calldata dataContent
+        bytes calldata dataContent,
+        address[] calldata permissions
     ) external returns (bytes32);
     
 
@@ -67,4 +69,20 @@ interface IDataMgt {
     function deleteDataById(
         bytes32 dataId
     ) external;
+
+   /**
+    * @notice Whether the data is permitted for the data user
+    * @param dataUser The data user
+    * @param dataId   the identifier of the data
+    * @return Return true if the data is permitted for the data user, else false
+    */
+   function isDataPermitted(bytes32 dataId, address dataUser) external returns (bool);
+
+   /**
+    * @notice Get the data if it is permitted for the data user, else revert
+    * @param dataUser The data user
+    * @param dataId   the identifier of the data
+    * @return Return the data if it is permitted for the data user, else revert
+    */
+   function checkAndGetPermittedDataById(bytes32 dataId, address dataUser) external returns (DataInfo memory);
 }

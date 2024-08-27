@@ -27,11 +27,20 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
     bytes32[] public workerIds;
     mapping(address => uint32) addressNonce;
     mapping(address => bool) public workerWhiteList;
+    address public dataMgtAddr;
 
     modifier onlyWhiteListedWorker(address worker) {
         require(
             workerWhiteList[worker],
             "workerWhiteList: worker not in whitelist"
+        );
+        _;
+    }
+
+    modifier onlyDataMgt() {
+        require(
+            msg.sender == dataMgtAddr,
+            "only dataMgt can call this function"
         );
         _;
     }
@@ -42,10 +51,20 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
 
     function initialize(
         PADORegistryCoordinator _registryCoordinator,
+        address _dataMgtAddr,
         address networkOwner
     ) external initializer {
         registryCoordinator = _registryCoordinator;
+        dataMgtAddr = _dataMgtAddr;
         _transferOwnership(networkOwner);
+    }
+
+    /**
+     * @notice Set the address of the data management contract.
+     * @param _dataMgtAddr The address of the data management contract.
+     */
+    function setDataMgtAddr(address _dataMgtAddr) external onlyOwner {
+        dataMgtAddr = _dataMgtAddr;
     }
 
     /**
@@ -183,7 +202,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         bytes32 dataId,
         uint32 t,
         uint32 n
-    ) external returns (bool) {
+    ) external onlyDataMgt returns (bool) {
         workersToEncryptData[dataId] = _selectWorkers(n);
         emit SelectDataWorkers(dataId, workersToEncryptData[dataId]);
         return true;
