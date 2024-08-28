@@ -113,7 +113,6 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
         require(dataInfo.owner == msg.sender, "DataMgt.register: caller is not data owner");
         require(dataContent.length > 0, "DataMgt.register: dataContent can not be empty");
         require(router.getFeeMgt().isSupportToken(priceInfo.tokenSymbol), "DataMgt.register: tokenSymbol is not supported");
-        require(priceInfo.price > 0, "DataMgt.register: dataPrice is not set");
 
         dataInfo.dataTag = dataTag;
         dataInfo.priceInfo = priceInfo;
