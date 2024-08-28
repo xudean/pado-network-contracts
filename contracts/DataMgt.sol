@@ -6,6 +6,7 @@ import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/Ownabl
 import {IDataMgt} from "./interface/IDataMgt.sol"; 
 import {IWorkerMgt} from "./interface/IWorkerMgt.sol";
 import {IRouter, IRouterUpdater} from "./interface/IRouter.sol";
+import {IDataPermission} from "./interface/IDataPermission.sol";
 import {Worker, DataStatus, DataInfo, PriceInfo, EncryptionSchema} from "./types/Common.sol";
 
 /**
@@ -80,7 +81,8 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
             workerIds: workerIds,
             registeredTimestamp: uint64(block.timestamp),
             owner: msg.sender,
-            status: DataStatus.REGISTERING
+            status: DataStatus.REGISTERING,
+            permissions: new address[](0)
         });
         _dataInfos[dataId] = dataInfo;
         _dataIdListPerOwner[msg.sender].push(dataId);
@@ -94,13 +96,15 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
      * @param dataTag The tag of data, providing basic information about data.
      * @param priceInfo The price infomation of data.
      * @param dataContent The content of data.
+     * @param permissions The contract addresses for data permission control, can be empty
      * @return The UID of the data
      */
     function register(
         bytes32 dataId,
         string calldata dataTag,
         PriceInfo calldata priceInfo,
-        bytes calldata dataContent
+        bytes calldata dataContent,
+        address[] calldata permissions
     ) external returns (bytes32) {
         DataInfo storage dataInfo = _dataInfos[dataId];
 
@@ -109,11 +113,11 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
         require(dataInfo.owner == msg.sender, "DataMgt.register: caller is not data owner");
         require(dataContent.length > 0, "DataMgt.register: dataContent can not be empty");
         require(router.getFeeMgt().isSupportToken(priceInfo.tokenSymbol), "DataMgt.register: tokenSymbol is not supported");
-        require(priceInfo.price > 0, "DataMgt.register: dataPrice is not set");
 
         dataInfo.dataTag = dataTag;
         dataInfo.priceInfo = priceInfo;
         dataInfo.dataContent = dataContent;
+        dataInfo.permissions = permissions;
 
         dataInfo.status = DataStatus.REGISTERED;
 
@@ -179,4 +183,39 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
         router = _router;
         emit RouterUpdated(oldRouter, _router);
     }
+
+   /**
+    * @notice Whether the data is permitted for the data user
+    * @param dataUser The data user
+    * @param dataId   the identifier of the data
+    * @return Return true if the data is permitted for the data user, else false
+    */
+   function isDataPermitted(bytes32 dataId, address dataUser) public returns (bool) {
+       DataInfo storage dataInfo = _dataInfos[dataId];
+       require(dataInfo.dataId == dataId, "DataMgt.isPermitted: data does not exist");
+
+       if (dataInfo.permissions.length == 0) {
+           return true;
+       }
+
+       for (uint256 i = 0; i < dataInfo.permissions.length; i++) {
+           bool b = IDataPermission(dataInfo.permissions[i]).isPermitted(dataUser);
+           if (!b) {
+               return false;
+           }
+       }
+       return true;
+   }
+
+   /**
+    * @notice Get the data if it is permitted for the data user, else revert
+    * @param dataUser The data user
+    * @param dataId   the identifier of the data
+    * @return Return the data if it is permitted for the data user, else revert
+    */
+   function checkAndGetPermittedDataById(bytes32 dataId, address dataUser) external returns (DataInfo memory) {
+       bool b = isDataPermitted(dataId, dataUser);
+       require(b, "DataMgt.checkAndGetPermittedDataById: data is not permitted for data user");
+       return _dataInfos[dataId];
+   }
 }

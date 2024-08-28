@@ -7,12 +7,47 @@ import {DataMgt} from "../contracts/DataMgt.sol";
 import {MockDeployer} from "./mock/MockDeployer.sol";
 import {DataInfo, PriceInfo, DataStatus, EncryptionSchema} from "../contracts/types/Common.sol";
 import {IDataMgtEvents} from "./events/IDataMgtEvents.sol";
+import {DataPermissionAlwaysTrue, DataPermissionAlwaysFalse} from "./mock/DataPermissionMock.sol";
 
 contract DataMgtTest is MockDeployer, IDataMgtEvents {
     bytes32 public registryId;
 
     function setUp() public {
         _deployAll();
+    }
+
+    function registerDataPermission(bool trueOrFalse, uint256 price) public {
+        bytes[] memory publicKeys;
+        vm.expectEmit(false, true, true, false);
+        emit DataPrepareRegistry(registryId, publicKeys);
+        (registryId, publicKeys) = dataMgt.prepareRegistry(EncryptionSchema({
+            t: 2,
+            n: 3
+        }));
+
+        PriceInfo memory priceInfo = PriceInfo({
+            tokenSymbol: "ETH",
+            price: price
+        });
+
+        bytes memory dataContent = bytes("test");
+
+        address[] memory permissionContracts = new address[](1);
+        if (trueOrFalse) {
+            DataPermissionAlwaysTrue truePermission = new DataPermissionAlwaysTrue();
+            permissionContracts[0] = address(truePermission);
+        }
+        else {
+            DataPermissionAlwaysFalse falsePermission = new DataPermissionAlwaysFalse();
+            permissionContracts[0] = address(falsePermission);
+        }
+        dataMgt.register(
+            registryId,
+            "data tag",
+            priceInfo,
+            dataContent,
+            permissionContracts    
+        );
     }
 
     function test_Registry() public {
@@ -30,13 +65,15 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         });
 
         bytes memory dataContent = bytes("test");
+        address[] memory permissions = new address[](0);
 
         vm.expectRevert("DataMgt.register: data does not exist");
         dataMgt.register(
             keccak256("registryId"),
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         vm.prank(msg.sender);
@@ -45,8 +82,11 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
+
+
 
         vm.expectEmit(true, true, true, true);
         emit DataRegistered(registryId);
@@ -54,7 +94,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         vm.expectRevert("DataMgt.register: data status is not REGISTERING");
@@ -62,7 +103,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
             registryId,
             "data tag",
             priceInfo,
-            dataContent
+            dataContent,
+            permissions
         );
 
         assertEq(registryId, dataId);
@@ -76,6 +118,35 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
         DataInfo memory dataInfo = dataMgt.getDataById(registryId);
         assertEq(dataInfo.dataId, registryId);
+    }
+
+    function getPermittedDataById_false(uint256 price) public {
+        registerDataPermission(false, price);
+        vm.expectRevert("DataMgt.checkAndGetPermittedDataById: data is not permitted for data user");
+        dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
+        
+        bool b = dataMgt.isDataPermitted(registryId, msg.sender);
+        assertEq(b, false, "is data permitted error");
+    }
+
+    function getPermittedDataById_true(uint256 price) public {
+        registerDataPermission(true, price);
+        dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
+
+        bool b = dataMgt.isDataPermitted(registryId, msg.sender);
+        assertEq(b, true, "is data permitted error");
+    }
+
+    function test_getPermittedDataById_false_2() public {
+        getPermittedDataById_false(2);
+    }
+
+    function test_getPermittedDataById_true_0() public {
+        getPermittedDataById_true(0);
+    }
+
+    function test_getPermittedDataById_true_2() public {
+        getPermittedDataById_true(2);
     }
 
     function test_getDataByOwner() public {

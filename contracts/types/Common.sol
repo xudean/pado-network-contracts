@@ -84,6 +84,7 @@ struct DataInfo {
     uint64 registeredTimestamp; // The timestamp at which the data was registered
     address owner; // The owner of the data
     DataStatus status; // The status of the data
+    address[] permissions; // The contract addresses for data permission control
 }
 
 /**
