@@ -36,6 +36,7 @@ contract WorkerMgtTest is Test {
                     abi.encodeWithSelector(
                         WorkerMgt.initialize.selector,
                         registryCoordinator,
+                        address(0),
                         address(this)
                     )
                 )
