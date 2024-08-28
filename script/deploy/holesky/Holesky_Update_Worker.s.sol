@@ -115,7 +115,10 @@ contract Holesky_Update_Worker is Utils, ExistingDeploymentParser {
         );
         console.log("upgrade taskMgt");
         console.log("workerMgt is:%s", address(workerMgt));
-        workerMgt.setDataMgtAddr(0xE48d23f3d21e2df9F5B7317BC1b0d35FFC801289);
+        workerMgt.setDataMgtAddr(stdJson.readAddress(
+            config_data,
+            ".addresses.dataMgt"
+        ));
 
     }
 
