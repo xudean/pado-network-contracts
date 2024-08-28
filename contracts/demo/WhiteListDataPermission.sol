@@ -9,6 +9,7 @@ import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initia
 
 contract WhiteListDataPermission is IDataPermission,Initializable,OwnableUpgradeable{
     address[] public whiteList;
+    event WhiteListAdded(address indexed _whiteList);
     constructor(){
     }
 
@@ -18,6 +19,7 @@ contract WhiteListDataPermission is IDataPermission,Initializable,OwnableUpgrade
 
     function addWhiteList(address _whiteList) external onlyOwner{
         whiteList.push(_whiteList);
+        emit WhiteListAdded(_whiteList);
     }
 
     function isPermitted(address dataUser) external view returns (bool){
