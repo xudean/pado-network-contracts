@@ -400,6 +400,17 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         return task;
     }
 
+    /**
+     * @notice Get a task
+     * @param taskId The task id
+     * @return Returns The task
+     */
+    function getTaskById(bytes32 taskId) external view returns (Task memory){
+        Task storage task = _allTasks[taskId];
+        require(task.taskId == taskId, "TaskMgt.getTaskById: task does not exist");
+        return task;
+    }
+
    /**
     * @notice Get task report status.
     * @param taskId The task id.
