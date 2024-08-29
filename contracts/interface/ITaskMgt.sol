@@ -100,6 +100,13 @@ interface ITaskMgt {
      */
     function getCompletedTaskById(bytes32 taskId) external view returns (Task memory);
 
+    /**
+     * @notice Get a task
+     * @param taskId The task id
+     * @return Returns The task
+     */
+    function getTaskById(bytes32 taskId) external view returns (Task memory);
+
    /**
     * @notice Get task report status.
     * @param taskId The task id.
