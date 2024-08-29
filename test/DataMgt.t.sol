@@ -16,7 +16,7 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         _deployAll();
     }
 
-    function registerDataPermission(bool trueOrFalse) public {
+    function registerDataPermission(bool trueOrFalse, uint256 price) public {
         bytes[] memory publicKeys;
         vm.expectEmit(false, true, true, false);
         emit DataPrepareRegistry(registryId, publicKeys);
@@ -27,7 +27,7 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
 
         PriceInfo memory priceInfo = PriceInfo({
             tokenSymbol: "ETH",
-            price: 2
+            price: price
         });
 
         bytes memory dataContent = bytes("test");
@@ -120,8 +120,8 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         assertEq(dataInfo.dataId, registryId);
     }
 
-    function test_getPermittedDataById_false() public {
-        registerDataPermission(false);
+    function getPermittedDataById_false(uint256 price) public {
+        registerDataPermission(false, price);
         vm.expectRevert("DataMgt.checkAndGetPermittedDataById: data is not permitted for data user");
         dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
         
@@ -129,12 +129,24 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         assertEq(b, false, "is data permitted error");
     }
 
-    function test_getPermittedDataById_true() public {
-        registerDataPermission(true);
+    function getPermittedDataById_true(uint256 price) public {
+        registerDataPermission(true, price);
         dataMgt.checkAndGetPermittedDataById(registryId, msg.sender);
 
         bool b = dataMgt.isDataPermitted(registryId, msg.sender);
         assertEq(b, true, "is data permitted error");
+    }
+
+    function test_getPermittedDataById_false_2() public {
+        getPermittedDataById_false(2);
+    }
+
+    function test_getPermittedDataById_true_0() public {
+        getPermittedDataById_true(0);
+    }
+
+    function test_getPermittedDataById_true_2() public {
+        getPermittedDataById_true(2);
     }
 
     function test_getDataByOwner() public {

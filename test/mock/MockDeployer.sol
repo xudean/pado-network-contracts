@@ -129,21 +129,6 @@ contract MockDeployer is G2Operations {
         // );
 
         IRegistryCoordinator registryCoordinator = new RegistryCoordinatorMock();
-        WorkerMgt workerMgtImplementation = new WorkerMgt();
-        workerMgt = WorkerMgt(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(workerMgtImplementation),
-                    address(proxyAdmin),
-                    abi.encodeWithSelector(
-                        WorkerMgt.initialize.selector,
-                        registryCoordinator,
-                        address(contractOwner)
-                    )
-                )
-            )
-        );
-
         feeMgt = IFeeMgt(
             address(
                 new TransparentUpgradeableProxy(
@@ -164,6 +149,22 @@ contract MockDeployer is G2Operations {
                         DataMgt.initialize.selector,
                         router,
                         contractOwner
+                    )
+                )
+            )
+        );
+
+        WorkerMgt workerMgtImplementation = new WorkerMgt();
+        workerMgt = WorkerMgt(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(workerMgtImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        WorkerMgt.initialize.selector,
+                        registryCoordinator,
+                        address(dataMgt),
+                        address(contractOwner)
                     )
                 )
             )
