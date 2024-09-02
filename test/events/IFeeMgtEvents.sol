@@ -19,14 +19,14 @@ interface IFeeMgtEvents {
 
     // emit in transfer token
     event TokenTransfered(
-        address from,
+        address indexed from,
         bytes32 tokenId,
         uint256 amount
     );
 
     // emit in withdraw
     event TokenWithdrawn(
-        address to,
+        address indexed to,
         bytes32 tokenId,
         uint256 amount
     );
