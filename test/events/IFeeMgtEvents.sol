@@ -4,55 +4,51 @@ pragma solidity ^0.8.20;
 interface IFeeMgtEvents {
     // emit in addFeeToken
     event FeeTokenAdded(
-        string indexed tokenSymbol,
-        address tokenAddress,
-        uint256 computingPrice
+        bytes32 indexed tokenId
     );
 
     // emit in updateFeeToken
     event FeeTokenUpdated(
-        string indexed tokenSymbol,
-        address tokenAddress,
-        uint256 computingPrice
+        bytes32 indexed tokenId
     );
 
     // emit in deleteFeeToken
     event FeeTokenDeleted(
-        string indexed tokenSymbol
+        bytes32 indexed tokenId
     );
 
     // emit in transfer token
     event TokenTransfered(
         address from,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in withdraw
     event TokenWithdrawn(
         address to,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in lock
     event FeeLocked(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in unlock
     event FeeUnlocked(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in settle
     event FeeSettled(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 

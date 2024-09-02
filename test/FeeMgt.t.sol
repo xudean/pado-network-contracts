@@ -26,12 +26,13 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function addFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
 
         vm.prank(contractOwner);
         vm.expectEmit(true, true, true, true);
-        emit FeeTokenAdded(tokenSymbol, address(erc20), computingPrice);
+        emit FeeTokenAdded(tokenId);
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
@@ -48,12 +49,13 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function updateFeeToken(string memory tokenSymbol, string memory desc, uint256 computingPrice) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
         TestERC20 erc20 = new TestERC20();
         erc20.initialize(desc, tokenSymbol, 18);
 
         vm.prank(contractOwner);
         vm.expectEmit(true, true, true, true);
-        emit FeeTokenUpdated(tokenSymbol, address(erc20), computingPrice);
+        emit FeeTokenUpdated(tokenId);
         feeMgt.updateFeeToken(tokenSymbol, address(erc20), computingPrice);
         erc20PerSymbol[tokenSymbol] = erc20;
 
@@ -123,9 +125,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         vm.expectRevert("FeeMgt.transferToken: amount is not correct");
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 6);
 
+        bytes32 tokenId = feeMgt.getTokenId("ETH");
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit TokenTransfered(msg.sender, "ETH", 5);
+        emit TokenTransfered(msg.sender, tokenId, 5);
         feeMgt.transferToken{value: 5}(msg.sender, "ETH", 5);
         uint256 balance = address(feeMgt).balance;
         assertEq(balance, 5, "balance error");
@@ -161,9 +164,10 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         vm.expectRevert("FeeMgt.transferToken: not supported token");
         feeMgt.transferToken(msg.sender, "TESTETH", 5);
                 
+        bytes32 tokenId = feeMgt.getTokenId("TEST");
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit TokenTransfered(msg.sender, "TEST", 5);
+        emit TokenTransfered(msg.sender, tokenId, 5);
         feeMgt.transferToken(msg.sender, "TEST", 5);
         uint256 balance = erc20.balanceOf(address(feeMgt));
         assertEq(balance, 5, "balance error");
@@ -184,6 +188,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function test_withdrawToken(string memory tokenSymbol) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
         test_transferToken(tokenSymbol);
         
         uint256 oldSenderBalance = getBalance(msg.sender, tokenSymbol);
@@ -200,7 +205,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
 
         vm.prank(address(msg.sender));
         vm.expectEmit(true, true, true, true);
-        emit TokenWithdrawn(address(msg.sender), tokenSymbol, 5);
+        emit TokenWithdrawn(address(msg.sender), tokenId, 5);
         feeMgt.withdrawToken(msg.sender, tokenSymbol, 5);
 
         uint256 senderBalance = getBalance(msg.sender, tokenSymbol);
@@ -254,6 +259,8 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function test_lock(string memory tokenSymbol) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
+
         test_transferToken(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Balance memory oldBalance = feeMgt.getBalance(msg.sender, tokenSymbol);
@@ -271,7 +278,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
 
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit FeeLocked(info.taskId, info.tokenSymbol, lockedAmount);
+        emit FeeLocked(info.taskId, tokenId, lockedAmount);
         feeMgt.lock(
             info.taskId,
             info.submitter,
@@ -292,6 +299,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function test_unlock(string memory tokenSymbol) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
         test_lock(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Balance memory oldBalance = feeMgt.getBalance(msg.sender, tokenSymbol);
@@ -299,7 +307,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 lockedAmount = feeTokenInfo.computingPrice * info.workerOwners.length + info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit FeeUnlocked(info.taskId, info.tokenSymbol, lockedAmount);
+        emit FeeUnlocked(info.taskId, tokenId, lockedAmount);
         feeMgt.unlock(
             info.taskId,
             info.submitter,
@@ -319,6 +327,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
     }
 
     function test_settle(string memory tokenSymbol) internal {
+        bytes32 tokenId = feeMgt.getTokenId(tokenSymbol);
         test_lock(tokenSymbol);
         FeeTokenInfo memory feeTokenInfo = feeMgt.getFeeTokenBySymbol(tokenSymbol);
         Balance memory oldBal = feeMgt.getBalance(msg.sender, tokenSymbol);
@@ -340,7 +349,7 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         uint256 lockedAmount2 = info.dataPrice * info.dataProviders.length;
         vm.prank(address(taskMgt));
         vm.expectEmit(true, true, true, true);
-        emit FeeSettled(info.taskId, info.tokenSymbol, lockedAmount2);
+        emit FeeSettled(info.taskId, tokenId, lockedAmount2);
         feeMgt.settle(
             info.taskId,
             info.submitter,

@@ -11,55 +11,51 @@ import {Balance, FeeTokenInfo, TaskStatus} from "../types/Common.sol";
 interface IFeeMgt {
     // emit in addFeeToken
     event FeeTokenAdded(
-        string indexed tokenSymbol,
-        address tokenAddress,
-        uint256 computingPrice
+        bytes32 indexed tokenId
     );
 
     // emit in updateFeeToken
     event FeeTokenUpdated(
-        string indexed tokenSymbol,
-        address tokenAddress,
-        uint256 computingPrice
+        bytes32 indexed tokenId
     );
 
     // emit in deleteFeeToken
     event FeeTokenDeleted(
-        string indexed tokenSymbol
+        bytes32 indexed tokenId
     );
 
     // emit in transfer token
     event TokenTransfered(
         address from,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in withdraw
     event TokenWithdrawn(
         address to,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in lock
     event FeeLocked(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in unlock
     event FeeUnlocked(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
     // emit in settle
     event FeeSettled(
         bytes32 indexed taskId,
-        string tokenSymbol,
+        bytes32 tokenId,
         uint256 amount
     );
 
@@ -182,6 +178,13 @@ interface IFeeMgt {
      * @return Returns the fee token.
      */
     function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory);
+
+    /**
+     * @notice Get token id.
+     * @param tokenSymbol The token symbol
+     * @return Return the token id
+     */
+    function getTokenId(string memory tokenSymbol) external pure returns (bytes32);
 
     /**
      * @notice Determine whether a token can pay the handling fee.
