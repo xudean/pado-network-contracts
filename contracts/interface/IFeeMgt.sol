@@ -180,6 +180,13 @@ interface IFeeMgt {
     function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory);
 
     /**
+     * @notice Get fee token by token id.
+     * @param tokenId The token id.
+     * @return Returns the fee token.
+     */
+    function getFeeTokenById(bytes32 tokenId) external view returns (FeeTokenInfo memory);
+
+    /**
      * @notice Get token id.
      * @param tokenSymbol The token symbol
      * @return Return the token id

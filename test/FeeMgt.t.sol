@@ -37,6 +37,9 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         erc20PerSymbol[tokenSymbol] = erc20;
         tokenSymbolList.push(tokenSymbol);
 
+        feeMgt.getFeeTokenBySymbol(tokenSymbol);
+        feeMgt.getFeeTokenById(tokenId);
+
         vm.prank(contractOwner);
         vm.expectRevert("FeeMgt._addFeeToken: token symbol already exists");
         feeMgt.addFeeToken(tokenSymbol, address(erc20), computingPrice);
