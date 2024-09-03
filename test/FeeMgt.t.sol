@@ -79,8 +79,12 @@ contract FeeMgtTest is MockDeployer, IFeeMgtEvents {
         vm.expectRevert("FeeMgt.deleteFeeToken: token does not exist");
         feeMgt.deleteFeeToken("SomeETH");
 
+        FeeTokenInfo[] memory oldTokenList = feeMgt.getFeeTokens();
         vm.prank(contractOwner);
         feeMgt.deleteFeeToken(tokenSymbol);
+        FeeTokenInfo[] memory tokenList = feeMgt.getFeeTokens();
+
+        assertEq(oldTokenList.length - tokenList.length, 1);
 
         vm.prank(contractOwner);
         vm.expectRevert("FeeMgt.deleteFeeToken: token does not exist");
