@@ -351,6 +351,15 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      */
     function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory) {
         bytes32 tokenId = getTokenId(tokenSymbol);
+        return getFeeTokenById(tokenId);
+    }
+
+    /**
+     * @notice Get fee token by token id.
+     * @param tokenId The token id.
+     * @return Returns the fee token.
+     */
+    function getFeeTokenById(bytes32 tokenId) public view returns (FeeTokenInfo memory) {
         FeeTokenInfo storage info = _feeTokenInfoForSymbol[tokenId]; 
 
         require(bytes(info.symbol).length > 0, "FeeMgt.getFeeTokenBySymbol: fee token does not exist");
