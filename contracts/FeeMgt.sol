@@ -17,14 +17,14 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     // router
     IRouter public router;
 
-    // tokenSymbol => FeeTokenInfo 
-    mapping(string symbol => FeeTokenInfo feeTokenInfo) private _feeTokenInfoForSymbol;
+    // tokenId => FeeTokenInfo 
+    mapping(bytes32 tokenId => FeeTokenInfo feeTokenInfo) private _feeTokenInfoForSymbol;
 
-    // tokenSymbol[]
-    string[] private _symbolList;
+    // tokenId[]
+    bytes32[] private _tokenIdList;
 
-    // eoa => tokenSymbol => balance
-    mapping(address eoa => mapping(string tokenSymbol => Balance balance)) private _balanceForEOA;
+    // eoa => tokenId => balance
+    mapping(address eoa => mapping(bytes32 tokenId => Balance balance)) private _balanceForEOA;
 
     // taskId => amount
     mapping(bytes32 taskId => uint256 amount) private _lockedAmountForTaskId;
@@ -47,6 +47,15 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     }
 
     /**
+     * @notice Get token id.
+     * @param tokenSymbol The token symbol
+     * @return Return the token id
+     */
+    function getTokenId(string memory tokenSymbol) public pure returns (bytes32) {
+        return keccak256(bytes(tokenSymbol));
+    }
+
+    /**
      * @notice TaskMgt contract request transfer tokens.
      * @param tokenSymbol The token symbol
      * @param amount The amount of tokens to be transfered
@@ -57,22 +66,23 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         uint256 amount
     ) payable external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "FeeMgt.transferToken: not supported token");
-        if (_isETH(tokenSymbol)) {
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        if (_isETH(tokenId)) {
             require(amount == msg.value, "FeeMgt.transferToken: amount is not correct");
         }
         else {
             require(msg.value == 0, "FeeMgt.transferToken: msg.value should be zero");
-            FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
+            FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenId];
             
             address tokenAddress = feeTokenInfo.tokenAddress;
             IERC20(tokenAddress).transferFrom(from, address(this), amount);
         }
 
-        Balance storage balance = _balanceForEOA[from][tokenSymbol];
+        Balance storage balance = _balanceForEOA[from][tokenId];
 
         balance.free += amount;
 
-        emit TokenTransfered(from, tokenSymbol, amount);
+        emit TokenTransfered(from, tokenId, amount);
     }
 
     /**
@@ -87,22 +97,22 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         uint256 amount
     ) external {
         require(isSupportToken(tokenSymbol), "FeeMgt.withdrawToken: not supported token");
-
-        Balance storage balance = _balanceForEOA[msg.sender][tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        Balance storage balance = _balanceForEOA[msg.sender][tokenId];
         require(balance.free >= amount, "FeeMgt.withdrawToken: insufficient free balance");
         balance.free -= amount;
-        if (_isETH(tokenSymbol)) {
+        if (_isETH(tokenId)) {
             (bool res, )  = payable(address(to)).call{value: amount}(new bytes(0));
             require(res, "FeeMgt.withdrawToken: call error");
         }
         else {
-            FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
+            FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenId];
             
             address tokenAddress = feeTokenInfo.tokenAddress;
             IERC20(tokenAddress).transfer(to, amount);
         }
 
-        emit TokenWithdrawn(to, tokenSymbol, amount);
+        emit TokenWithdrawn(to, tokenId, amount);
     }
 
     /**
@@ -121,7 +131,8 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.lock: not supported token");
 
-        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        Balance storage balance = _balanceForEOA[submitter][tokenId];
 
         require(balance.free >= toLockAmount, "FeeMgt.lock: Insufficient free balance");
 
@@ -129,7 +140,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         balance.locked += toLockAmount;
         _lockedAmountForTaskId[taskId] = toLockAmount;
 
-        emit FeeLocked(taskId, tokenSymbol, toLockAmount);
+        emit FeeLocked(taskId, tokenId, toLockAmount);
         return true;
     }
 
@@ -149,14 +160,15 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         uint256 toUnlockAmount = _lockedAmountForTaskId[taskId];
         require(toUnlockAmount > 0, "FeeMgt.unlock: locked amount is zero");
 
-        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        Balance storage balance = _balanceForEOA[submitter][tokenId];
         require(balance.locked >= toUnlockAmount, "FeeMgt.unlock: Insufficient locked balance");
 
         balance.free += toUnlockAmount;
         balance.locked -= toUnlockAmount;
         _lockedAmountForTaskId[taskId] -= toUnlockAmount;
 
-        emit FeeUnlocked(taskId, tokenSymbol, toUnlockAmount);
+        emit FeeUnlocked(taskId, tokenId, toUnlockAmount);
         return true;
     }
 
@@ -175,14 +187,15 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         string calldata tokenSymbol
     ) external onlyTaskMgt {
         require(isSupportToken(tokenSymbol), "FeeMgt.payWorker: not supported token");
-        uint256 computingPrice = _feeTokenInfoForSymbol[tokenSymbol].computingPrice;
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        uint256 computingPrice = _feeTokenInfoForSymbol[tokenId].computingPrice;
         require(computingPrice > 0, "FeeMgt.payWorker: computing price is not set");
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
         require(lockedAmount >= computingPrice, "FeeMgt.payWorker: insufficient lockedAmount");
         _lockedAmountForTaskId[taskId] -= computingPrice;
 
-        _balanceForEOA[submitter][tokenSymbol].locked -= computingPrice;
-        _balanceForEOA[workerOwner][tokenSymbol].free += computingPrice;
+        _balanceForEOA[submitter][tokenId].locked -= computingPrice;
+        _balanceForEOA[workerOwner][tokenId].free += computingPrice;
 
     }
 
@@ -203,10 +216,11 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         address[] calldata dataProviders
     ) external onlyTaskMgt returns (bool) {
         require(isSupportToken(tokenSymbol), "FeeMgt.settle: not supported token");
+        bytes32 tokenId = getTokenId(tokenSymbol);
 
         uint256 lockedAmount = _lockedAmountForTaskId[taskId];
 
-        Balance storage balance = _balanceForEOA[submitter][tokenSymbol];
+        Balance storage balance = _balanceForEOA[submitter][tokenId];
 
         uint256 expectedBalance = dataPrice * dataProviders.length;
 
@@ -217,7 +231,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
             _settle(
                 taskId,
                 submitter,
-                tokenSymbol,
+                tokenId,
                 dataPrice,
                 dataProviders
             );
@@ -227,7 +241,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
             balance.locked -= toReturnAmount;
             balance.free += toReturnAmount;
             
-            emit FeeUnlocked(taskId, tokenSymbol, toReturnAmount);
+            emit FeeUnlocked(taskId, tokenId, toReturnAmount);
         }
 
         return true;
@@ -253,7 +267,8 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      */
     function updateFeeToken(string calldata tokenSymbol, address tokenAddress, uint256 computingPrice) external onlyOwner returns (bool) {
         require(bytes(tokenSymbol).length > 0, "FeeMgt.updateFeeToken: tokenSymbol can not be empty");
-        FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        FeeTokenInfo storage feeTokenInfo = _feeTokenInfoForSymbol[tokenId];
         require(bytes(feeTokenInfo.symbol).length > 0, "FeeMgt.updateFeeToken: fee token does not exist");
 
         if (tokenAddress != address(0)) {
@@ -262,7 +277,7 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
         if (computingPrice != 0) {
             feeTokenInfo.computingPrice = computingPrice;
         }
-        emit FeeTokenUpdated(tokenSymbol, tokenAddress, computingPrice);
+        emit FeeTokenUpdated(tokenId);
         return true;
     }
 
@@ -271,10 +286,19 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @param tokenSymbol The fee token symbol.
      */
     function deleteFeeToken(string calldata tokenSymbol) external onlyOwner {
-        require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length > 0, "FeeMgt.deleteFeeToken: token does not exist");
-        delete _feeTokenInfoForSymbol[tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        require(bytes(_feeTokenInfoForSymbol[tokenId].symbol).length > 0, "FeeMgt.deleteFeeToken: token does not exist");
+        delete _feeTokenInfoForSymbol[tokenId];
 
-        emit FeeTokenDeleted(tokenSymbol);
+        for (uint256 i = 0; i < _tokenIdList.length; i++) {
+            if (_tokenIdList[i] == tokenId) {
+                _tokenIdList[i] = _tokenIdList[_tokenIdList.length - 1];
+                _tokenIdList.pop();
+                break;
+            }
+        }
+
+        emit FeeTokenDeleted(tokenId);
     }
 
     /**
@@ -285,9 +309,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns true if the adding is successful.
      */
     function _addFeeToken(string memory tokenSymbol, address tokenAddress, uint256 computingPrice) internal returns (bool) {
-        require(bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length == 0, "FeeMgt._addFeeToken: token symbol already exists");
         require(bytes(tokenSymbol).length > 0, "FeeMgt._addFeeToken: tokenSymbol can not be empty");
-        require(_isETH(tokenSymbol) || tokenAddress != address(0), "FeeMgt._addFeeToken: tokenAddress can not be empty");
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        require(bytes(_feeTokenInfoForSymbol[tokenId].symbol).length == 0, "FeeMgt._addFeeToken: token symbol already exists");
+        require(_isETH(tokenId) || tokenAddress != address(0), "FeeMgt._addFeeToken: tokenAddress can not be empty");
         require(computingPrice > 0, "FeeMgt._addFeeToken: computingPrice can not be zero");
 
         FeeTokenInfo memory feeTokenInfo = FeeTokenInfo({
@@ -295,10 +320,10 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
             tokenAddress: tokenAddress,
             computingPrice: computingPrice
         });
-        _feeTokenInfoForSymbol[tokenSymbol] = feeTokenInfo;
-        _symbolList.push(tokenSymbol);
+        _feeTokenInfoForSymbol[tokenId] = feeTokenInfo;
+        _tokenIdList.push(tokenId);
 
-        emit FeeTokenAdded(tokenSymbol, tokenAddress, computingPrice);
+        emit FeeTokenAdded(tokenId);
         return true;
     }
 
@@ -307,13 +332,13 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns the all fee tokens info.
      */
     function getFeeTokens() external view returns (FeeTokenInfo[] memory) {
-        uint256 symbolListLength = _symbolList.length;
+        uint256 symbolListLength = _tokenIdList.length;
         FeeTokenInfo[] memory tokenInfos = new FeeTokenInfo[](symbolListLength);
 
-        for (uint256 i = 0; i < _symbolList.length; i++) {
-            string storage symbol = _symbolList[i];
+        for (uint256 i = 0; i < _tokenIdList.length; i++) {
+            bytes32 tokenId = _tokenIdList[i];
 
-            tokenInfos[i] = _feeTokenInfoForSymbol[symbol]; 
+            tokenInfos[i] = _feeTokenInfoForSymbol[tokenId]; 
         }
 
         return tokenInfos;
@@ -325,7 +350,17 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns the fee token.
      */
     function getFeeTokenBySymbol(string calldata tokenSymbol) external view returns (FeeTokenInfo memory) {
-        FeeTokenInfo storage info = _feeTokenInfoForSymbol[tokenSymbol]; 
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        return getFeeTokenById(tokenId);
+    }
+
+    /**
+     * @notice Get fee token by token id.
+     * @param tokenId The token id.
+     * @return Returns the fee token.
+     */
+    function getFeeTokenById(bytes32 tokenId) public view returns (FeeTokenInfo memory) {
+        FeeTokenInfo storage info = _feeTokenInfoForSymbol[tokenId]; 
 
         require(bytes(info.symbol).length > 0, "FeeMgt.getFeeTokenBySymbol: fee token does not exist");
         return info;
@@ -336,10 +371,11 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Returns true if a token can pay fee, otherwise returns false.
      */
     function isSupportToken(string calldata tokenSymbol) public view returns (bool) {
-        if (_isETH(tokenSymbol)) {
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        if (_isETH(tokenId)) {
             return true;
         }
-        return bytes(_feeTokenInfoForSymbol[tokenSymbol].symbol).length > 0;
+        return bytes(_feeTokenInfoForSymbol[tokenId].symbol).length > 0;
     }
 
     /**
@@ -349,41 +385,42 @@ contract FeeMgt is IFeeMgt, IRouterUpdater, OwnableUpgradeable {
      * @return Balance for the EOA
      */
     function getBalance(address eoa, string calldata tokenSymbol) external view returns (Balance memory) {
-        return _balanceForEOA[eoa][tokenSymbol];
+        bytes32 tokenId = getTokenId(tokenSymbol);
+        return _balanceForEOA[eoa][tokenId];
     }
 
     /**
-     * @notice Whether the token symbol is ETH
-     * @param tokenSymbol The token symbol
-     * @return True if the token symbol is ETH, else false
+     * @notice Whether the token id is ETH
+     * @param tokenId The token id
+     * @return True if the token id is ETH, else false
      */
-    function _isETH(string memory tokenSymbol) internal pure returns (bool) {
-        return keccak256(bytes(tokenSymbol)) == keccak256(bytes("ETH"));
+    function _isETH(bytes32 tokenId) internal pure returns (bool) {
+        return tokenId == getTokenId("ETH");
     }
 
     /**
      * @notice TaskMgt contract request settlement fee.
      * @param taskId The task id.
      * @param submitter The submitter of the task.
-     * @param tokenSymbol The fee token symbol.
+     * @param tokenId The fee token id.
      * @param dataPrice The data price of the task.
      * @param dataProviders The address of data providers which provide data to the task.
      */
     function _settle(
         bytes32 taskId,
         address submitter,
-        string memory tokenSymbol,
+        bytes32 tokenId,
         uint256 dataPrice,
         address[] memory dataProviders
     ) internal {
         uint256 settledFee = 0;
 
         for (uint256 i = 0; i < dataProviders.length; i++) {
-            _balanceForEOA[dataProviders[i]][tokenSymbol].free += dataPrice;
+            _balanceForEOA[dataProviders[i]][tokenId].free += dataPrice;
             settledFee += dataPrice;
         }
-        _balanceForEOA[submitter][tokenSymbol].locked -= settledFee;
-        emit FeeSettled(taskId, tokenSymbol, settledFee);
+        _balanceForEOA[submitter][tokenId].locked -= settledFee;
+        emit FeeSettled(taskId, tokenId, settledFee);
     }
 
     modifier onlyTaskMgt() {
