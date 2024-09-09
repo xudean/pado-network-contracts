@@ -19,6 +19,7 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
         WorkerType workerType,
         address owner
     );
+    event WorkerDeregistry(bytes32 indexed workerId);
     event SelectDataWorkers(bytes32 indexed dataId, bytes32[] workerIds);
 
     PADORegistryCoordinator public registryCoordinator;
@@ -174,6 +175,8 @@ contract WorkerMgt is IWorkerMgt, OwnableUpgradeable {
             workers[operatorInfo.operatorId].status = WorkerStatus.UNREGISTERED;
             //remove from workerIds
             _removeWorkerId(operatorInfo.operatorId);
+
+            emit WorkerDeregistry(operatorInfo.operatorId);
         }
         return true;
     }

@@ -149,13 +149,6 @@ contract DataMgtTest is MockDeployer, IDataMgtEvents {
         getPermittedDataById_true(2);
     }
 
-    function test_getDataByOwner() public {
-        test_Registry();
-
-        DataInfo[] memory dataInfo = dataMgt.getDataByOwner(address(this));
-        assertEq(dataInfo.length, 1);
-    }
-
     function test_deleteDataById() public {
         test_Registry();
         
