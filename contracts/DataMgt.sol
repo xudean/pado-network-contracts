@@ -23,9 +23,6 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
     // dataId => dataInfo
     mapping(bytes32 dataId => DataInfo dataInfo) private _dataInfos;
 
-    // owner => dataIdList[]
-    mapping(address owner => bytes32[] dataIdList) private _dataIdListPerOwner;
-    
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -85,7 +82,6 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
             permissions: new address[](0)
         });
         _dataInfos[dataId] = dataInfo;
-        _dataIdListPerOwner[msg.sender].push(dataId);
 
         emit DataPrepareRegistry(dataId, publicKeys);
     }
@@ -126,23 +122,6 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
         return dataId;
     }
     
-
-    /**
-     * @notice Get data by owner
-     * @param owner The owner of data
-     * @return return data owned by the owner
-     */
-    function getDataByOwner(
-        address owner
-    ) external view returns (DataInfo[] memory) {
-        bytes32[] storage dataIdList = _dataIdListPerOwner[owner];
-
-        DataInfo[] memory allDataInfo = new DataInfo[](dataIdList.length);
-        for (uint256 i = 0; i < dataIdList.length; i++) {
-            allDataInfo[i] = _dataInfos[dataIdList[i]];
-        }
-        return allDataInfo;
-    }
 
     /**
      * @notice Get data by dataId
