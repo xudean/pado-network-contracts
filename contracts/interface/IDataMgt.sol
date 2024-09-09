@@ -45,15 +45,6 @@ interface IDataMgt {
     
 
     /**
-     * @notice Get data by owner
-     * @param owner The owner of data
-     * @return return data owned by the owner
-     */
-    function getDataByOwner(
-        address owner
-    ) external view returns (DataInfo[] memory);
-
-    /**
      * @notice Get data by dataId
      * @param dataId The identifier of the data
      * @return return the data 
