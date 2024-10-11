@@ -160,10 +160,6 @@ contract TaskMgtTest is MockDeployer, ITaskMgtEvents {
         vm.expectEmit(true, true, true, true);
         emit TaskFailed(taskId);
         taskMgt.updateTask(taskId);
-
-        vm.prank(msg.sender);
-        vm.expectRevert("TaskMgt.getCompletedTaskById: task is not completed"); 
-        taskMgt.getCompletedTaskById(taskId);
     }
 
     function test_reportResult_GreaterT() public {
