@@ -38,6 +38,19 @@ const workerAbi = [
     },
     {
         "type": "function",
+        "name": "dataMgtAddr",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
         "name": "delegate",
         "inputs": [
             {
@@ -521,6 +534,11 @@ const workerAbi = [
                 "internalType": "contract PADORegistryCoordinator"
             },
             {
+                "name": "_dataMgtAddr",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
                 "name": "networkOwner",
                 "type": "address",
                 "internalType": "address"
@@ -801,6 +819,19 @@ const workerAbi = [
                 "internalType": "bool"
             }
         ],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "setDataMgtAddr",
+        "inputs": [
+            {
+                "name": "_dataMgtAddr",
+                "type": "address",
+                "internalType": "address"
+            }
+        ],
+        "outputs": [],
         "stateMutability": "nonpayable"
     },
     {

@@ -6,7 +6,7 @@ const privateKey = process.env.PRIVATE_KEY;
 console.log(`privateKey:${privateKey}`)
 const wallet = new ethers.Wallet(privateKey);
 
-const provider = new ethers.JsonRpcProvider('https://rpc-holesky.rockx.com'); //
+const provider = new ethers.JsonRpcProvider('https://eth-holesky.g.alchemy.com/v2/63xm51Uk6Vj9Z9HRNOBPXAmY_jN0fRlf'); //
 // const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com'); // 
 const signer = wallet.connect(provider);
 
@@ -22,17 +22,28 @@ async function callContractFunction() {
     // let tx = await contract.addWhiteListItem('0x17b0f76da804f6aab3a4ca8448040a4d78e1a719');
     // await tx.wait();
     //
-    // tx = await contract.addWhiteListItem('0x23856faab83217cd629dc68f29fa18dfdd6d57cb');
+    // tx = await contract.addWhiteListItem('0x82da30e2ab471c8d2e6af2c7c6e25f19d80436b2');
     // await tx.wait();
-    //
+    // //
     // tx = await contract.addWhiteListItem('0x48f760bd0678daaf51a9417ca68edb210eb50104');
     // await tx.wait();
     //
     // tx = await contract.addWhiteListItem('0x5dc2c8c703b0860731bba000af353890d3e36e6b');
     // await tx.wait();
-    tx = await contract.getWorkers();
+    // const tx = await contract.workerWhiteList('0x82da30e2ab471c8d2e6af2c7c6e25f19d80436b2');
+    // console.log(tx)
+
+    const tx = await contract.getWorkers();
     console.log(tx.length)
     console.log(tx)
+    for (let i = 0; i < tx.length; i++) {
+        const detail = tx[i]
+        const txStr = arseedingHexStrToBase64(detail[6])
+        console.log(`${detail[5]}`)
+        // console.log(`address:${detail[5]}, tx:${txStr}`)
+        // console.log(`https://arseed.web3infra.dev/${txStr}`)
+    }
+
     // console.log(tx)
     // await getAdmin()
     // for(var i=0;i<5;i++){
@@ -47,7 +58,16 @@ async function callContractFunction() {
     // const address = contract.implementation();
     // console.log(`implementation is :{}`,address)
 }
+const arseedingHexStrToBase64 = (hexStr) => {
+    hexStr = hexStr.startsWith('0x') ? hexStr.slice(2) : hexStr;
 
+    const byteArray = new Uint8Array(hexStr.length / 2);
+    for (let i = 0; i < hexStr.length; i += 2) {
+        byteArray[i / 2] = parseInt(hexStr.slice(i, i + 2), 16);
+    }
+    const decoder = new TextDecoder();
+    return decoder.decode(byteArray);
+};
 function getWorkerIds() {
     return contract.getWorkerIds();
 }

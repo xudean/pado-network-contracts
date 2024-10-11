@@ -2,7 +2,7 @@ const { ethers, upgrades } = require("hardhat");
 const {serviceManagerAbi} = require("./abi/serviceManager");
 
 // Connect to the Ethereum network
-const provider = new ethers.JsonRpcProvider(`https://rpc-holesky.rockx.com`);
+const provider = new ethers.JsonRpcProvider(`https://eth-holesky.g.alchemy.com/v2/63xm51Uk6Vj9Z9HRNOBPXAmY_jN0fRlf`);
 
 // Replace with your own private key (ensure this is kept secret in real applications)
 const privateKey = process.env.PRIVATE_KEY;
