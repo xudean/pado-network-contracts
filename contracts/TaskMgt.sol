@@ -396,7 +396,7 @@ contract TaskMgt is ITaskMgt, IRouterUpdater, OwnableUpgradeable{
         Task storage task = _allTasks[taskId];
         require(task.taskId == taskId, "TaskMgt.getCompletedTaskById: task does not exist");
 
-        require(task.computingInfo.results.length >= task.computingInfo.t, "TaskMgt.getCompletedTaskById: not enough node report result");
+        require(task.computingInfo.reportCount >= task.computingInfo.t, "TaskMgt.getCompletedTaskById: not enough node report result");
         return task;
     }
 
