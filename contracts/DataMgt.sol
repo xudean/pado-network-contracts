@@ -178,7 +178,7 @@ contract DataMgt is IDataMgt, IRouterUpdater, OwnableUpgradeable {
        }
 
        for (uint256 i = 0; i < dataInfo.permissions.length; i++) {
-           bool b = IDataPermission(dataInfo.permissions[i]).isPermitted(dataUser);
+           bool b = IDataPermission(dataInfo.permissions[i]).isPermitted(dataUser,dataId);
            if (!b) {
                return false;
            }
